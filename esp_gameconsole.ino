@@ -14,22 +14,79 @@
 #define ST77XX_ORANGE 0xFC00
 
 LuaWrapper lua;
+TFT_eSPI tft = TFT_eSPI();
 
 const String luaFileStr = String(R""""(
 print("loading lua file str")
+
 function init()
-  print("Hello!")
+  print("Hello from init!")
+  tftPrintLn("Hello from init!")
+end
+
+function update(dt)
+  --print("Hello!")
+end
+
+function draw()
+  --print("Hello!")
 end
 )"""");
 
+int luaDoTFTPrintLn(lua_State * state) {
+  const char * str = lua_tostring(state, 1);
+
+  if (str != NULL) {
+    tft.println(str);
+  }
+
+  lua_pop(state, 1);
+
+  return 0;
+}
+
+// Time variables for loop (SET AT END OF setup)
+unsigned long oldTime = 0;
 void setup() {
   Serial.begin(115200);
 
+  lua_register(lua.State, "tftPrintLn", luaDoTFTPrintLn);
+
   Serial.println("Hello?");
   Serial.print(lua.Lua_dostring(&luaFileStr));
+
+  tft.init();
+  tft.setRotation(45);
+  tft.fillScreen(ST77XX_BLACK);
+  tft.setTextColor(ST77XX_WHITE);
+  tft.setTextWrap(false);
+  tft.setCursor(0, 0);
+
+  tft.println("DISPLAY STARTED");
+
+  lua_getglobal(lua.State, "init");
+  if (lua_pcall(lua.State, 0, 0, 0) != LUA_OK) {
+    Serial.println("error calling init");
+  }
+
+  // SET LOOP TIME AT END OF setup
+  oldTime = micros();
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
+  unsigned long thisTime = micros();
+  unsigned long dt = 0;
+  // Handle overflow
+  if (thisTime < oldTime) {
+    unsigned long maxNum = 0;
+    maxNum--;
+
+    dt = (maxNum - oldTime) + thisTime + 1;
+  }
+  else {
+    dt = thisTime - oldTime;
+  }
+  oldTime = thisTime;
+
 
 }
