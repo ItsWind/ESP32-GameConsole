@@ -56,7 +56,7 @@ Button buttons[] = {
   {JOYSTICK_RIGHT_BUTTON_PIN, 0, false, "BUTTON_JOYSTICK_RIGHT"}
 };
 
-/////////////////////////////////////////////////////////// FUNCTIONS
+/////////////////////////////////////////////////////////// UTIL FUNCTIONS
 
 uint16_t rgb888_to_rgb565(uint8_t R, uint8_t G, uint8_t B) {
   uint16_t r_565 = (R >> 3) & 0x1F; // Red component
@@ -82,25 +82,35 @@ int luaDoTFTPrintLn(lua_State * state) {
 
 /////////////////////////////////////////////////////////// C -> LUA FUNCTIONS
 
-void luaSendInputEvent(const char * inputName, int64_t inputValue, const char * inputType) {
-  String inputNameToUse = String(inputName);
-  if (inputType != nullptr) {
-    inputNameToUse += String("_") + String(inputType);
+void luaSendInit() {
+  lua_getglobal(lua.State, "init");
+  if (lua_pcall(lua.State, 0, 0, 0) != LUA_OK) {
+    Serial.println("error calling init");
   }
+}
 
+void luaSendUpdate(unsigned long dt) {
+  lua_getglobal(lua.State, "update");
+  lua_pushnumber(lua.State, (float)dt / 1000000.0);
+  if (lua_pcall(lua.State, 1, 0, 0) != LUA_OK) {
+    Serial.println("error calling update");
+  }
+}
+
+void luaSendInputEvent(const char * inputName, const char * inputType, float inputValue, float inputValue2) {
   lua_getglobal(lua.State, "input");
-  lua_pushstring(lua.State, inputNameToUse.c_str());
+  lua_pushstring(lua.State, inputName);
+  lua_pushstring(lua.State, inputType);
   lua_pushnumber(lua.State, inputValue);
-  if (lua_pcall(lua.State, 2, 0, 0) != LUA_OK) {
+  lua_pushnumber(lua.State, inputValue2);
+  if (lua_pcall(lua.State, 4, 0, 0) != LUA_OK) {
     Serial.println("error calling input");
   }
 }
 
-// Time variables for loop (SET AT END OF setup)
-unsigned long oldTime = 0;
-void setup() {
-  Serial.begin(115200);
+/////////////////////////////////////////////////////////// CORE FUNCTIONS
 
+void initPins() {
   // Left (drive) stick
   pinMode(JOYSTICK_LEFT_BUTTON_PIN, INPUT_PULLUP);
   pinMode(JOYSTICK_LEFT_X_PIN, INPUT);
@@ -116,11 +126,86 @@ void setup() {
   pinMode(DPAD_RIGHT_PIN, INPUT_PULLUP);
   pinMode(DPAD_DOWN_PIN, INPUT_PULLUP);
   pinMode(DPAD_LEFT_PIN, INPUT_PULLUP);
+}
 
+void initLua() {
   lua_register(lua.State, "tftPrintLn", luaDoTFTPrintLn);
 
   Serial.println("Hello?");
   Serial.print(lua.Lua_dostring(&LUA_FILE_STR));
+}
+
+void checkButtonInputs(unsigned long dt) {
+  // Iterate button pins
+  for (int i = 0; i < sizeof(buttons) / sizeof(Button); i++) {
+    uint8_t pinNum = buttons[i].pinNum;
+    int buttonState = digitalRead(pinNum);
+
+    // If button pressed (LOW)
+    if (buttonState == LOW) {
+      //if (buttons[i].toggled == false && buttons[i].heldFor >= 20000) {
+      if (buttons[i].heldFor >= BUTTON_DEBOUNCE_MICROS) {
+        const char * inputType = nullptr;
+        // Toggled on first time after being off
+        if (!buttons[i].toggled) {
+          buttons[i].toggled = true;
+          inputType = "PRESSED";
+        }
+        else {
+          inputType = "HELD";
+        }
+
+        luaSendInputEvent(buttons[i].inputName, inputType, (float)(buttons[i].heldFor - BUTTON_DEBOUNCE_MICROS) / 1000000.0, 0);
+      }
+      buttons[i].heldFor += dt;
+    }
+    else {
+      if (buttons[i].toggled) {
+        luaSendInputEvent(buttons[i].inputName, "RELEASED", (float)(buttons[i].heldFor - BUTTON_DEBOUNCE_MICROS) / 1000000.0, 0);
+      }
+
+      buttons[i].toggled = false;
+      buttons[i].heldFor = 0;
+    }
+  }
+}
+
+float checkJoystickAxis(uint8_t pinNumber) {
+  float toReturn = 0.0;
+  uint16_t joystickAxisRead = analogRead(pinNumber);
+
+  if (joystickAxisRead <= JOYSTICK_DEADZONE_LOWER) {
+    toReturn = lerp(-1.0, 0.0, (float)joystickAxisRead / (float)JOYSTICK_DEADZONE_LOWER);
+  }
+  else if (joystickAxisRead >= JOYSTICK_DEADZONE_UPPER) {
+    toReturn = lerp(0.0, 1.0, (float)(joystickAxisRead - JOYSTICK_DEADZONE_UPPER) / (float)(4095 - JOYSTICK_DEADZONE_UPPER));
+  }
+
+  return toReturn;
+}
+
+void checkJoystickInputs() {
+  float leftX = checkJoystickAxis(JOYSTICK_LEFT_X_PIN);
+  float leftY = checkJoystickAxis(JOYSTICK_LEFT_Y_PIN);
+  if (leftX != 0.0 || leftY != 0.0) {
+    luaSendInputEvent("JOYSTICK_LEFT", "MOVED", leftX * -1.0, leftY);
+  }
+
+  float rightX = checkJoystickAxis(JOYSTICK_RIGHT_X_PIN);
+  float rightY = checkJoystickAxis(JOYSTICK_RIGHT_Y_PIN);
+  if (rightX != 0.0 || rightY != 0.0) {
+    luaSendInputEvent("JOYSTICK_RIGHT", "MOVED", rightX, rightY * -1.0);
+  }
+}
+
+// Time variables for loop (SET AT END OF setup)
+unsigned long oldTime = 0;
+void setup() {
+  Serial.begin(115200);
+
+  initPins();
+
+  initLua();
 
   tft.init();
   tft.setRotation(45);
@@ -132,10 +217,7 @@ void setup() {
   tft.println("DISPLAY STARTED");
 
   // Call lua init
-  lua_getglobal(lua.State, "init");
-  if (lua_pcall(lua.State, 0, 0, 0) != LUA_OK) {
-    Serial.println("error calling init");
-  }
+  luaSendInit();
 
   // SET LOOP TIME AT END OF setup
   oldTime = micros();
@@ -157,42 +239,9 @@ void loop() {
   oldTime = thisTime;
   
   // Handle lua input sending
-
-  // Iterate button pins
-  for (int i = 0; i < sizeof(buttons) / sizeof(Button); i++) {
-    uint8_t pinNum = buttons[i].pinNum;
-    int buttonState = digitalRead(pinNum);
-
-    // If button pressed (LOW)
-    if (buttonState == LOW) {
-      //if (buttons[i].toggled == false && buttons[i].heldFor >= 20000) {
-      if (buttons[i].heldFor >= BUTTON_DEBOUNCE_MICROS) {
-        const char * inputType = nullptr;
-
-        // Toggled on first time after being off
-        if (!buttons[i].toggled) {
-          buttons[i].toggled = true;
-          inputType = "PRESSED";
-        }
-
-        luaSendInputEvent(buttons[i].inputName, (int64_t)(buttons[i].heldFor - BUTTON_DEBOUNCE_MICROS), inputType);
-      }
-      buttons[i].heldFor += dt;
-    }
-    else {
-      if (buttons[i].toggled) {
-        luaSendInputEvent(buttons[i].inputName, (int64_t)(buttons[i].heldFor - BUTTON_DEBOUNCE_MICROS), "RELEASED");
-      }
-
-      buttons[i].toggled = false;
-      buttons[i].heldFor = 0;
-    }
-  }
+  checkButtonInputs(dt);
+  checkJoystickInputs();
 
   // Call lua update with dt
-  lua_getglobal(lua.State, "update");
-  lua_pushnumber(lua.State, dt);
-  if (lua_pcall(lua.State, 1, 0, 0) != LUA_OK) {
-    Serial.println("error calling update");
-  }
+  luaSendUpdate(dt);
 }

@@ -11,8 +11,8 @@ function update(dt)
   --print(dt)
 end
 
-function input(name, value)
-  print(name .. ": " .. value)
+function input(name, type, value, value2)
+  print(name .. " : " .. type .. " : " .. value .. " : " .. value2)
 end
 
 )"""");
