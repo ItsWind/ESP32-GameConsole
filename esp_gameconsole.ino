@@ -3,17 +3,6 @@
 #include <TFT_eSPI.h>
 #include <SPI.h>
 
-// Some ready-made 16-bit ('565') color settings:
-#define ST77XX_BLACK 0x0000
-#define ST77XX_WHITE 0xFFFF
-#define ST77XX_RED 0xF800
-#define ST77XX_GREEN 0x07E0
-#define ST77XX_BLUE 0x001F
-#define ST77XX_CYAN 0x07FF
-#define ST77XX_MAGENTA 0xF81F
-#define ST77XX_YELLOW 0xFFE0
-#define ST77XX_ORANGE 0xFC00
-
 /////////////////////////////////////////////////////////// CONSTANTS
 
 const uint8_t JOYSTICK_LEFT_X_PIN = 34;
@@ -28,7 +17,7 @@ const uint8_t DPAD_RIGHT_PIN = 33;
 const uint8_t DPAD_DOWN_PIN = 14;
 const uint8_t DPAD_LEFT_PIN = 13;
 
-const uint16_t JOYSTICK_DEADZONE_UPPER = 2200;
+const uint16_t JOYSTICK_DEADZONE_UPPER = 2100;
 const uint16_t JOYSTICK_DEADZONE_LOWER = 1500;
 
 const uint16_t BUTTON_DEBOUNCE_MICROS = 20000;
@@ -37,6 +26,7 @@ const uint16_t BUTTON_DEBOUNCE_MICROS = 20000;
 
 LuaWrapper lua;
 TFT_eSPI tft = TFT_eSPI();
+TFT_eSprite tftFrameSprite = TFT_eSprite(&tft);
 
 /////////////////////////////////////////////////////////// STRUCTS
 
@@ -90,7 +80,7 @@ int luaDoDrawBox(lua_State * state) {//(int32_t x, int32_t y, int32_t w, int32_t
   uint8_t b = (uint8_t)lua_tonumber(state, 7);
 
   if (x != NULL && y != NULL && w != NULL && h != NULL && r != NULL && g != NULL && b != NULL) {
-    tft.fillRect(x, y, w, h, rgb888_to_rgb565(r, g, b));
+    tftFrameSprite.fillRect(x - (w/2), y - (h/2), w, h, rgb888_to_rgb565(r, g, b));
   }
 
   lua_pop(state, 7);
@@ -236,7 +226,7 @@ void setup() {
   tft.init();
   tft.setRotation(45);
   tft.fillScreen(TFT_BLACK);
-  tft.setTextColor(ST77XX_WHITE);
+  tft.setTextColor(TFT_WHITE);
   tft.setTextWrap(false);
   tft.setCursor(0, 0);
 
@@ -268,6 +258,10 @@ void loop() {
   checkButtonInputs(dt);
   checkJoystickInputs();
 
-  tft.fillScreen(ST77XX_BLACK);
+  tftFrameSprite.deleteSprite();
+  tftFrameSprite = TFT_eSprite(&tft);
+  tftFrameSprite.createSprite(tft.width(), tft.height());
+  tftFrameSprite.fillSprite(TFT_BLACK);
   luaSendDraw();
+  tftFrameSprite.pushSprite(0, 0);
 }
