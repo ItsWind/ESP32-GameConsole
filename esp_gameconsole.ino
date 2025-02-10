@@ -80,6 +80,24 @@ int luaDoTFTPrintLn(lua_State * state) {
   return 0;
 }
 
+int luaDoDrawBox(lua_State * state) {//(int32_t x, int32_t y, int32_t w, int32_t h, uint8_t r, uint8_t g, uint8_t b) {
+  int32_t x = (int32_t)lua_tonumber(state, 1);
+  int32_t y = (int32_t)lua_tonumber(state, 2);
+  int32_t w = (int32_t)lua_tonumber(state, 3);
+  int32_t h = (int32_t)lua_tonumber(state, 4);
+  uint8_t r = (uint8_t)lua_tonumber(state, 5);
+  uint8_t g = (uint8_t)lua_tonumber(state, 6);
+  uint8_t b = (uint8_t)lua_tonumber(state, 7);
+
+  if (x != NULL && y != NULL && w != NULL && h != NULL && r != NULL && g != NULL && b != NULL) {
+    tft.fillRect(x, y, w, h, rgb888_to_rgb565(r, g, b));
+  }
+
+  lua_pop(state, 7);
+
+  return 0;
+}
+
 /////////////////////////////////////////////////////////// C -> LUA FUNCTIONS
 
 void luaSendInit() {
@@ -94,6 +112,13 @@ void luaSendUpdate(unsigned long dt) {
   lua_pushnumber(lua.State, (float)dt / 1000000.0);
   if (lua_pcall(lua.State, 1, 0, 0) != LUA_OK) {
     Serial.println("error calling update");
+  }
+}
+
+void luaSendDraw() {
+  lua_getglobal(lua.State, "draw");
+  if (lua_pcall(lua.State, 0, 0, 0) != LUA_OK) {
+    Serial.println("error calling draw");
   }
 }
 
@@ -130,6 +155,7 @@ void initPins() {
 
 void initLua() {
   lua_register(lua.State, "tftPrintLn", luaDoTFTPrintLn);
+  lua_register(lua.State, "drawBox", luaDoDrawBox);
 
   Serial.println("Hello?");
   Serial.print(lua.Lua_dostring(&LUA_FILE_STR));
@@ -209,14 +235,13 @@ void setup() {
 
   tft.init();
   tft.setRotation(45);
-  tft.fillScreen(ST77XX_BLACK);
+  tft.fillScreen(TFT_BLACK);
   tft.setTextColor(ST77XX_WHITE);
   tft.setTextWrap(false);
   tft.setCursor(0, 0);
 
   tft.println("DISPLAY STARTED");
 
-  // Call lua init
   luaSendInit();
 
   // SET LOOP TIME AT END OF setup
@@ -237,11 +262,12 @@ void loop() {
     dt = thisTime - oldTime;
   }
   oldTime = thisTime;
+
+  luaSendUpdate(dt);
   
-  // Handle lua input sending
   checkButtonInputs(dt);
   checkJoystickInputs();
 
-  // Call lua update with dt
-  luaSendUpdate(dt);
+  tft.fillScreen(ST77XX_BLACK);
+  luaSendDraw();
 }
