@@ -79,7 +79,7 @@ int luaDoGetInputVector(lua_State * state) {
   float x = 0.0;
   float y = 0.0;
 
-  uint8_t joystickIndex = (uint8_t)lua_tointeger(state, 1);
+  uint8_t joystickIndex = (uint8_t)lua_tonumber(state, 1);
 
   switch (joystickIndex) {
     case 0:
@@ -159,7 +159,7 @@ int luaDoGetInputButtonReleased(lua_State * state) {
   return 2;
 }
 
-int luaDoTFTPrintLn(lua_State * state) {
+int luaDoTFTPrint(lua_State * state) {
   const char * str = lua_tostring(state, 1);
 
   tft.println(str);
@@ -170,13 +170,13 @@ int luaDoTFTPrintLn(lua_State * state) {
 }
 
 int luaDoDrawBox(lua_State * state) {//(int32_t x, int32_t y, int32_t w, int32_t h, uint8_t r, uint8_t g, uint8_t b) {
-  int32_t x = (int32_t)lua_tointeger(state, 1);
-  int32_t y = (int32_t)lua_tointeger(state, 2);
-  int32_t w = (int32_t)lua_tointeger(state, 3);
-  int32_t h = (int32_t)lua_tointeger(state, 4);
-  uint8_t r = (uint8_t)lua_tointeger(state, 5);
-  uint8_t g = (uint8_t)lua_tointeger(state, 6);
-  uint8_t b = (uint8_t)lua_tointeger(state, 7);
+  int32_t x = (int32_t)lua_tonumber(state, 1);
+  int32_t y = (int32_t)lua_tonumber(state, 2);
+  int32_t w = (int32_t)lua_tonumber(state, 3);
+  int32_t h = (int32_t)lua_tonumber(state, 4);
+  uint8_t r = (uint8_t)lua_tonumber(state, 5);
+  uint8_t g = (uint8_t)lua_tonumber(state, 6);
+  uint8_t b = (uint8_t)lua_tonumber(state, 7);
 
   tftFrameSprite.fillRect(x - (w/2), y - (h/2), w, h, rgb888_to_rgb565(r, g, b));
 
@@ -196,7 +196,7 @@ void luaSendInit() {
 
 void luaSendUpdate(unsigned long dt) {
   lua_getglobal(lua.State, "update");
-  lua_pushnumber(lua.State, (float)dt / 1000000.0);
+  lua_pushnumber(lua.State, (double)dt / 1000000.0);
   if (lua_pcall(lua.State, 1, 0, 0) != LUA_OK) {
     Serial.println("error calling update");
   }
@@ -234,7 +234,7 @@ void initLua() {
   lua_register(lua.State, "getInputButtonPressed", luaDoGetInputButtonPressed);
   lua_register(lua.State, "getInputButtonHeld", luaDoGetInputButtonHeld);
   lua_register(lua.State, "getInputButtonReleased", luaDoGetInputButtonReleased);
-  lua_register(lua.State, "tftPrintLn", luaDoTFTPrintLn);
+  lua_register(lua.State, "tftPrint", luaDoTFTPrint);
   lua_register(lua.State, "drawBox", luaDoDrawBox);
 
   Serial.println("Hello?");
