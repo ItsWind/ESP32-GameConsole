@@ -22,6 +22,72 @@ extern "C" {
     return 0;
   }
 
+  static int luaRequire(lua_State * state) {
+    // Get string name passed
+    const char * reqStrName = lua_tostring(state, 1);
+
+    // Check package.loaded for key entry of reqStrName
+    lua_getglobal(state, "package");  // Push 'package' onto the stack
+    lua_getfield(state, -1, "loaded"); // Push 'package.loaded' onto the stack
+    lua_remove(state, -2);  // Remove 'package' from the stack, leaving 'package.loaded'
+    lua_pushstring(state, reqStrName);
+    lua_gettable(state, -2);
+
+    // If found in loaded, then return table found
+    if (lua_istable(state, -1)) {
+      lua_remove(state, -2); // Remove package.loaded
+      lua_remove(state, -2); // Remove reqStrName
+      return 1;
+    }
+    // If not found, pop and continue
+    lua_pop(state, 1);
+
+    // Check package.preload for key entry of reqStrName
+    lua_getglobal(state, "package");  // Push 'package' onto the stack
+    lua_getfield(state, -1, "preload"); // Push 'package.preload' onto the stack
+    lua_remove(state, -2);  // Remove 'package' from the stack, leaving 'package.preload'
+    lua_pushstring(state, reqStrName);
+    lua_gettable(state, -2);
+    lua_remove(state, -2); // remove preload table, currently: [reqStrName, package.loaded, package.preload.reqStrName]
+
+    if (lua_isfunction(state, -1)) {
+      // Execute function if function found
+      if (lua_pcall(state, 0, 1, 0) != LUA_OK) {
+        lua_pop(state, lua_gettop(state)); // pop all
+        return 0; // Function execution failed
+      }
+
+      // current stack: [reqStrName, package.loaded, returnTable]
+      
+      int returnsCount = lua_gettop(state) - 2;
+      // Check if function executed returned a value
+      if (returnsCount != 1) {
+        lua_pop(state, lua_gettop(state)); // pop all
+        return 0;
+      }
+      // Check if first value is not a table
+      else if (!lua_istable(state, 3)) {
+        lua_pop(state, lua_gettop(state)); // pop all
+        return 0;
+      }
+
+      // Put new table into loaded
+      lua_pushstring(state, reqStrName); // [reqStrName, package.loaded, returnTable, reqStrName]
+      lua_insert(state, -2); // [reqStrName, package.loaded, reqStrName, returnTable]
+      lua_settable(state, -3); // pops reqStrName at top and returnTable, so we have to get return table back
+      // [reqStrName, package.loaded]
+      lua_pushstring(state, reqStrName);
+      lua_gettable(state, -2);
+      lua_remove(state, -2); // remove package.loaded
+      lua_remove(state, -2); // remove reqStrName
+      
+      return 1;
+    }
+    lua_pop(state, lua_gettop(state));
+    
+    return 0;
+  }
+
   static int luaGetInputVector(lua_State * state) {
     float x = 0.0;
     float y = 0.0;
@@ -125,7 +191,7 @@ extern "C" {
     uint8_t g = (uint8_t)lua_tonumber(state, 6);
     uint8_t b = (uint8_t)lua_tonumber(state, 7);
 
-    tftFrameSprite.fillRect(x - (w/2), y - (h/2), w, h, rgb888_to_rgb565(r, g, b));
+    tftFrameSprite.fillRect(x, y, w, h, rgb888_to_rgb565(r, g, b));
 
     lua_pop(state, 7);
 
@@ -136,12 +202,14 @@ extern "C" {
 void LuaImp::InitializeGame() {
   State = luaL_newstate();
 
+  // Load base libs
   luaopen_base(State);
   luaopen_table(State);
   luaopen_string(State);
   luaopen_math(State);
 
   lua_register(State, "print", luaPrint);
+  lua_register(State, "require", luaRequire);
   lua_register(State, "getInputVector", luaGetInputVector);
   lua_register(State, "getInputButtonPressed", luaGetInputButtonPressed);
   lua_register(State, "getInputButtonHeld", luaGetInputButtonHeld);
@@ -149,30 +217,63 @@ void LuaImp::InitializeGame() {
   lua_register(State, "tftPrint", luaTFTPrint);
   lua_register(State, "drawBox", luaDrawBox);
 
+  luaL_dostring(State, "package = {}\npackage.preload = {}\npackage.loaded = {}");
+  
+  String loadSimpleCols = "package.preload.SimpleCollisions = function() " + String(SIMPLE_COLLISIONS_FILE_STR) + " end";
+  luaL_dostring(State, loadSimpleCols.c_str());
+
+  // Seed random
+  String mathRandomSeedStr = "math.randomseed(" + String(random(1, 10000000)) + ")";
+  luaL_dostring(State, mathRandomSeedStr.c_str());
+
   Serial.println("Hello?");
-  String mathRandomSeed = "math.randomseed(" + String(random(1, 10000000)) + ")\r\n";
-  luaL_dostring(State, mathRandomSeed.c_str());
+
+  // Do file str
   Serial.print(luaL_dostring(State, LUA_FILE_STR));
 }
 
 void LuaImp::SendInit() {
-  lua_getglobal(State, "init");
+  lua_getglobal(State, "Init");
   if (lua_pcall(State, 0, 0, 0) != LUA_OK) {
+    const char * errMsg = lua_tostring(State, -1);
+
     Serial.println("error calling init");
+    Serial.println(errMsg);
+    while (true) {}
   }
 }
 
 void LuaImp::SendUpdate(unsigned long dt) {
-  lua_getglobal(State, "update");
+  lua_getglobal(State, "Update");
   lua_pushnumber(State, (double)dt / 1000000.0);
   if (lua_pcall(State, 1, 0, 0) != LUA_OK) {
+    const char * errMsg = lua_tostring(State, -1);
+
     Serial.println("error calling update");
+    Serial.println(errMsg);
+    while (true) {}
+  }
+}
+
+void LuaImp::SendFixedUpdate(unsigned long dt) {
+  lua_getglobal(State, "FixedUpdate");
+  lua_pushnumber(State, (double)dt / 1000000.0);
+  if (lua_pcall(State, 1, 0, 0) != LUA_OK) {
+    const char * errMsg = lua_tostring(State, -1);
+
+    Serial.println("error calling fixed update");
+    Serial.println(errMsg);
+    while (true) {}
   }
 }
 
 void LuaImp::SendDraw() {
-  lua_getglobal(State, "draw");
+  lua_getglobal(State, "Draw");
   if (lua_pcall(State, 0, 0, 0) != LUA_OK) {
+    const char * errMsg = lua_tostring(State, -1);
+
     Serial.println("error calling draw");
+    Serial.println(errMsg);
+    while (true) {}
   }
 }

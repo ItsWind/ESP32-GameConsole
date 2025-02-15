@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include "Util.h"
 #include "Constants.h"
 #include "Input.h"
 #include "TFTImp.h"
@@ -48,6 +49,8 @@ void setup() {
   oldTime = micros();
 }
 
+const uint16_t FIXED_UPDATE_TIME_NEEDED = 33333; // 16667
+unsigned long fixedUpdateTimer = 0;
 void loop() {
   unsigned long thisTime = micros();
   unsigned long dt = 0;
@@ -62,15 +65,29 @@ void loop() {
     dt = thisTime - oldTime;
   }
   oldTime = thisTime;
+
+  fixedUpdateTimer += dt;
   
   checkButtonInputs(dt);
 
   lua.SendUpdate(dt);
+
+  while (fixedUpdateTimer >= FIXED_UPDATE_TIME_NEEDED) {
+    lua.SendFixedUpdate(FIXED_UPDATE_TIME_NEEDED);
+    fixedUpdateTimer -= FIXED_UPDATE_TIME_NEEDED;
+  }
 
   tftFrameSprite.deleteSprite();
   tftFrameSprite = TFT_eSprite(&tft);
   tftFrameSprite.createSprite(tft.width(), tft.height());
   tftFrameSprite.fillSprite(TFT_BLACK);
   lua.SendDraw();
+  tftFrameSprite.setCursor(0, 0);
+  tftFrameSprite.setTextSize(1);
+
+  char frameFPSBuf[5];
+  sprintf(frameFPSBuf, "%.2f", 1000000.0 / dt);
+
+  tftFrameSprite.print(frameFPSBuf);
   tftFrameSprite.pushSprite(0, 0);
 }

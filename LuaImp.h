@@ -1,10 +1,11 @@
 #pragma once
 
 #include <Arduino.h>
+#include "Util.h"
 #include "Constants.h"
 #include "Input.h"
-#include "Util.h"
 #include "TFTImp.h"
+#include "SimpleCollisionsFileStr.h"
 #include "LuaFileStr.h"
 
 #define LUA_USE_C89
@@ -16,5 +17,6 @@ class LuaImp {
     void InitializeGame();
     void SendInit();
     void SendUpdate(unsigned long dt);
+    void SendFixedUpdate(unsigned long dt);
     void SendDraw();
 };

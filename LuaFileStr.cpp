@@ -3,7 +3,8 @@
 const char * LUA_FILE_STR = R""""(
 
 print("loading lua file str")
---math.randomseed(RANDOMSEEDNUM)
+
+local Collision = require("SimpleCollisions")
 
 local function getNormalized(x, y)
   local vectorLen = math.sqrt(x * x + y * y)
@@ -24,13 +25,16 @@ local guyMan = {
   velocity = {
     x = 0,
     y = 0
-  },
-  position = {
-    x = 30,
-    y = 30
   }
 }
+guyMan.init = function()
+  Collision.AddBox(guyMan, 30, 30, 5, 5)
+end
 guyMan.update = function(dt)
+  -- Apply velocity to position
+  Collision.SlideBox(guyMan, guyMan.velocity.x * dt, guyMan.velocity.y * dt)
+end
+guyMan.fixedupdate = function(dt)
   local leftX, leftY = getInputVector(0)
   local normX, normY = getNormalized(leftX, leftY)
 
@@ -49,10 +53,6 @@ guyMan.update = function(dt)
     guyMan.velocity.y = lerp(guyMan.velocity.y, normY * guyMan.speed * speedMult, dt)
   end
 
-  -- Apply velocity to position
-  guyMan.position.x = guyMan.position.x + (guyMan.velocity.x * dt)
-  guyMan.position.y = guyMan.position.y + (guyMan.velocity.y * dt)
-
   -- velocity X damping
   if guyMan.velocity.x ~= 0 then
     guyMan.velocity.x = guyMan.velocity.x * 0.1^dt
@@ -66,20 +66,58 @@ guyMan.update = function(dt)
   end
 end
 guyMan.draw = function()
-  drawBox(guyMan.position.x, guyMan.position.y, 5, 5, 255, 255, 255)
+  drawBox(guyMan.box.x, guyMan.box.y, guyMan.box.w, guyMan.box.h, 255, 255, 255)
 end
 
-function init()
+local walls = {
+  {
+    x = 60,
+    y = 60,
+    w = 30,
+    h = 10
+  },
+  {
+    x = 30,
+    y = 70,
+    w = 10,
+    h = 20
+  }
+}
+
+function Init()
   print("Hello from init!")
   tftPrint("Hello from init!")
   print(math.random(100))
+
+  guyMan.init()
+
+  for i=1, #walls do
+    Collision.AddBox(walls[i], walls[i].x, walls[i].y, walls[i].w, walls[i].h)
+  end
 end
 
-function update(dt)
+local xMultDebug = 1
+function Update(dt)
   guyMan.update(dt)
+
+  if walls[1].box.x > 90 then
+    xMultDebug = -1
+  elseif walls[1].box.x < 20 then
+    xMultDebug = 1
+  end
+
+  Collision.SlideBox(walls[1], 64 * dt * xMultDebug, 0)
 end
 
-function draw()
+function FixedUpdate(dt)
+  guyMan.fixedupdate(dt)
+end
+
+function Draw()
+  for i=1, #walls do
+    drawBox(walls[i].box.x, walls[i].box.y, walls[i].box.w, walls[i].box.h, 255, 0, 0)
+  end
+
   guyMan.draw()
 end
 
