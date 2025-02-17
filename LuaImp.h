@@ -11,12 +11,12 @@
 #define LUA_USE_C89
 #include <lua.hpp>
 
-class LuaImp {
-  public:
-    lua_State * State;
-    void InitializeGame();
-    void SendInit();
-    void SendUpdate(unsigned long dt);
-    void SendFixedUpdate(unsigned long dt);
-    void SendDraw();
-};
+namespace LuaImp {
+  extern lua_State * State;
+  
+  void InitializeGame();
+  void SendInit();
+  void SendUpdate(unsigned long dt);
+  void SendFixedUpdate(unsigned long dt);
+  void SendDraw();
+}

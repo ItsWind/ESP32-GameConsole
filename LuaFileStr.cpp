@@ -93,6 +93,7 @@ function Init()
 
   for i=1, #walls do
     Collision.AddBox(walls[i], walls[i].x, walls[i].y, walls[i].w, walls[i].h)
+    Collision.LockBox(walls[i], true, true)
   end
 end
 

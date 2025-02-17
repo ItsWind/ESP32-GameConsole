@@ -19,11 +19,11 @@ local function checkForCollision(box1, box2)
 end
 
 local function slideCollision(box1, box2)
-  local overlapX = 0
-  local overlapY = 0
-
   -- Check if box1 is colliding with box2
   if checkForCollision(box1, box2) then
+    local overlapX = 0
+    local overlapY = 0
+
     -- Check horizontal overlap
     if box1.x + box1.w > box2.x and box1.x < box2.x then
       overlapX = box2.x - (box1.x + box1.w)
@@ -46,10 +46,34 @@ local function slideCollision(box1, box2)
         overlapX = 0
       end
     end
+
+    if overlapX ~= 0 then
+      if box1.lockX ~= true and box2.lockX ~= true then
+        local halfOverlap = overlapX / 2
+        box1.x = box1.x + halfOverlap
+        box2.x = box2.x - halfOverlap
+      elseif box1.lockX ~= true then
+        box1.x = box1.x + overlapX
+      elseif box2.lockX ~= true then
+        box2.x = box2.x - overlapX
+      end
+    elseif overlapY ~= 0 then
+      if box1.lockY ~= true and box2.lockY ~= true then
+        local halfOverlap = overlapY / 2
+        box1.y = box1.y + halfOverlap
+        box2.y = box2.y - halfOverlap
+      elseif box1.lockY ~= true then
+        box1.y = box1.y + overlapY
+      elseif box2.lockX ~= true then
+        box2.y = box2.y - overlapY
+      end
+    end
+    return true
   end
+  return false
 
   -- Return the adjusted positions
-  return box1.x + overlapX, box1.y + overlapY
+  --return box1.x + overlapX, box1.y + overlapY
 end
 
 function this.AddBox(parent, x, y, w, h)
@@ -84,6 +108,11 @@ function this.RemoveBox(parent)
   end
 end
 
+function this.LockBox(parent, lockX, lockY)
+  parent.box.lockX = lockX
+  parent.box.lockY = lockY
+end
+
 function this.SlideBox(parent, modX, modY)
   local cols = {}
   parent.box.x = parent.box.x + modX
@@ -91,11 +120,7 @@ function this.SlideBox(parent, modX, modY)
 
   for i=1, #boxes do
     if boxes[i].parent ~= parent then
-      local tryX, tryY = slideCollision(parent.box, boxes[i])
-      
-      if tryX ~= parent.box.x or tryY ~= parent.box.y then
-        parent.box.x = tryX
-        parent.box.y = tryY
+      if slideCollision(parent.box, boxes[i]) then
         cols[#cols + 1] = boxes[i]
       end
     end

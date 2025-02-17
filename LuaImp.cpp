@@ -1,6 +1,6 @@
 #include "LuaImp.h"
 
-extern "C" {
+//extern "C" {
   static int luaPrint(lua_State * state) {
     int n = lua_gettop(state);  /* number of arguments */
     int i;
@@ -96,12 +96,12 @@ extern "C" {
 
     switch (joystickIndex) {
       case 0:
-        x = checkJoystickAxis(JOYSTICK_LEFT_X_PIN) * -1.0;
-        y = checkJoystickAxis(JOYSTICK_LEFT_Y_PIN) * -1.0;
+        x = Input::CheckJoystickAxis(JOYSTICK_LEFT_X_PIN) * -1.0;
+        y = Input::CheckJoystickAxis(JOYSTICK_LEFT_Y_PIN) * -1.0;
         break;
       case 1:
-        x = checkJoystickAxis(JOYSTICK_RIGHT_X_PIN);
-        y = checkJoystickAxis(JOYSTICK_RIGHT_Y_PIN);
+        x = Input::CheckJoystickAxis(JOYSTICK_RIGHT_X_PIN);
+        y = Input::CheckJoystickAxis(JOYSTICK_RIGHT_Y_PIN);
         break;
     }
 
@@ -117,9 +117,9 @@ extern "C" {
 
     const char * inputNameToCheck = lua_tostring(state, 1);
 
-    for (uint8_t i = 0; i < sizeof(buttons) / sizeof(Button); i++) {
-      if (strcmp(buttons[i].inputName, inputNameToCheck) == 0) {
-        toReturn = buttons[i].justPressed;
+    for (uint8_t i = 0; i < sizeof(Input::Buttons) / sizeof(Input::Button); i++) {
+      if (strcmp(Input::Buttons[i].inputName, inputNameToCheck) == 0) {
+        toReturn = Input::Buttons[i].justPressed;
         break;
       }
     }
@@ -136,10 +136,10 @@ extern "C" {
 
     const char * inputNameToCheck = lua_tostring(state, 1);
 
-    for (uint8_t i = 0; i < sizeof(buttons) / sizeof(Button); i++) {
-      if (strcmp(buttons[i].inputName, inputNameToCheck) == 0) {
-        toReturn = buttons[i].toggled && !buttons[i].justPressed;
-        toReturnHeldFor = buttons[i].heldFor;
+    for (uint8_t i = 0; i < sizeof(Input::Buttons) / sizeof(Input::Button); i++) {
+      if (strcmp(Input::Buttons[i].inputName, inputNameToCheck) == 0) {
+        toReturn = Input::Buttons[i].toggled && !Input::Buttons[i].justPressed;
+        toReturnHeldFor = Input::Buttons[i].heldFor;
         break;
       }
     }
@@ -157,10 +157,10 @@ extern "C" {
 
     const char * inputNameToCheck = lua_tostring(state, 1);
 
-    for (uint8_t i = 0; i < sizeof(buttons) / sizeof(Button); i++) {
-      if (strcmp(buttons[i].inputName, inputNameToCheck) == 0) {
-        toReturn = buttons[i].justReleased;
-        toReturnHeldFor = buttons[i].heldFor;
+    for (uint8_t i = 0; i < sizeof(Input::Buttons) / sizeof(Input::Button); i++) {
+      if (strcmp(Input::Buttons[i].inputName, inputNameToCheck) == 0) {
+        toReturn = Input::Buttons[i].justReleased;
+        toReturnHeldFor = Input::Buttons[i].heldFor;
         break;
       }
     }
@@ -175,7 +175,7 @@ extern "C" {
   static int luaTFTPrint(lua_State * state) {
     const char * str = lua_tostring(state, 1);
 
-    tft.println(str);
+    TFTImp::Screen.println(str);
 
     lua_pop(state, 1);
 
@@ -191,89 +191,93 @@ extern "C" {
     uint8_t g = (uint8_t)lua_tonumber(state, 6);
     uint8_t b = (uint8_t)lua_tonumber(state, 7);
 
-    tftFrameSprite.fillRect(x, y, w, h, rgb888_to_rgb565(r, g, b));
+    TFTImp::FrameSprite.fillRect(x, y, w, h, Util::rgb888_to_rgb565(r, g, b));
 
     lua_pop(state, 7);
 
     return 0;
   }
-}
+//}
 
-void LuaImp::InitializeGame() {
-  State = luaL_newstate();
+namespace LuaImp {
+  lua_State * State;
 
-  // Load base libs
-  luaopen_base(State);
-  luaopen_table(State);
-  luaopen_string(State);
-  luaopen_math(State);
+  void InitializeGame() {
+    State = luaL_newstate();
 
-  lua_register(State, "print", luaPrint);
-  lua_register(State, "require", luaRequire);
-  lua_register(State, "getInputVector", luaGetInputVector);
-  lua_register(State, "getInputButtonPressed", luaGetInputButtonPressed);
-  lua_register(State, "getInputButtonHeld", luaGetInputButtonHeld);
-  lua_register(State, "getInputButtonReleased", luaGetInputButtonReleased);
-  lua_register(State, "tftPrint", luaTFTPrint);
-  lua_register(State, "drawBox", luaDrawBox);
+    // Load base libs
+    luaopen_base(State);
+    luaopen_table(State);
+    luaopen_string(State);
+    luaopen_math(State);
 
-  luaL_dostring(State, "package = {}\npackage.preload = {}\npackage.loaded = {}");
-  
-  String loadSimpleCols = "package.preload.SimpleCollisions = function() " + String(SIMPLE_COLLISIONS_FILE_STR) + " end";
-  luaL_dostring(State, loadSimpleCols.c_str());
+    lua_register(State, "print", luaPrint);
+    lua_register(State, "require", luaRequire);
+    lua_register(State, "getInputVector", luaGetInputVector);
+    lua_register(State, "getInputButtonPressed", luaGetInputButtonPressed);
+    lua_register(State, "getInputButtonHeld", luaGetInputButtonHeld);
+    lua_register(State, "getInputButtonReleased", luaGetInputButtonReleased);
+    lua_register(State, "tftPrint", luaTFTPrint);
+    lua_register(State, "drawBox", luaDrawBox);
 
-  // Seed random
-  String mathRandomSeedStr = "math.randomseed(" + String(random(1, 10000000)) + ")";
-  luaL_dostring(State, mathRandomSeedStr.c_str());
+    luaL_dostring(State, "package = {}\npackage.preload = {}\npackage.loaded = {}");
+    
+    String loadSimpleCols = "package.preload.SimpleCollisions = function() " + String(SIMPLE_COLLISIONS_FILE_STR) + " end";
+    luaL_dostring(State, loadSimpleCols.c_str());
 
-  Serial.println("Hello?");
+    // Seed random
+    String mathRandomSeedStr = "math.randomseed(" + String(random(1, 10000000)) + ")";
+    luaL_dostring(State, mathRandomSeedStr.c_str());
 
-  // Do file str
-  Serial.print(luaL_dostring(State, LUA_FILE_STR));
-}
+    Serial.println("Hello?");
 
-void LuaImp::SendInit() {
-  lua_getglobal(State, "Init");
-  if (lua_pcall(State, 0, 0, 0) != LUA_OK) {
-    const char * errMsg = lua_tostring(State, -1);
-
-    Serial.println("error calling init");
-    Serial.println(errMsg);
-    while (true) {}
+    // Do file str
+    Serial.print(luaL_dostring(State, LUA_FILE_STR));
   }
-}
 
-void LuaImp::SendUpdate(unsigned long dt) {
-  lua_getglobal(State, "Update");
-  lua_pushnumber(State, (double)dt / 1000000.0);
-  if (lua_pcall(State, 1, 0, 0) != LUA_OK) {
-    const char * errMsg = lua_tostring(State, -1);
+  void SendInit() {
+    lua_getglobal(State, "Init");
+    if (lua_pcall(State, 0, 0, 0) != LUA_OK) {
+      const char * errMsg = lua_tostring(State, -1);
 
-    Serial.println("error calling update");
-    Serial.println(errMsg);
-    while (true) {}
+      Serial.println("error calling init");
+      Serial.println(errMsg);
+      while (true) {}
+    }
   }
-}
 
-void LuaImp::SendFixedUpdate(unsigned long dt) {
-  lua_getglobal(State, "FixedUpdate");
-  lua_pushnumber(State, (double)dt / 1000000.0);
-  if (lua_pcall(State, 1, 0, 0) != LUA_OK) {
-    const char * errMsg = lua_tostring(State, -1);
+  void SendUpdate(unsigned long dt) {
+    lua_getglobal(State, "Update");
+    lua_pushnumber(State, (double)dt / 1000000.0);
+    if (lua_pcall(State, 1, 0, 0) != LUA_OK) {
+      const char * errMsg = lua_tostring(State, -1);
 
-    Serial.println("error calling fixed update");
-    Serial.println(errMsg);
-    while (true) {}
+      Serial.println("error calling update");
+      Serial.println(errMsg);
+      while (true) {}
+    }
   }
-}
 
-void LuaImp::SendDraw() {
-  lua_getglobal(State, "Draw");
-  if (lua_pcall(State, 0, 0, 0) != LUA_OK) {
-    const char * errMsg = lua_tostring(State, -1);
+  void SendFixedUpdate(unsigned long dt) {
+    lua_getglobal(State, "FixedUpdate");
+    lua_pushnumber(State, (double)dt / 1000000.0);
+    if (lua_pcall(State, 1, 0, 0) != LUA_OK) {
+      const char * errMsg = lua_tostring(State, -1);
 
-    Serial.println("error calling draw");
-    Serial.println(errMsg);
-    while (true) {}
+      Serial.println("error calling fixed update");
+      Serial.println(errMsg);
+      while (true) {}
+    }
+  }
+
+  void SendDraw() {
+    lua_getglobal(State, "Draw");
+    if (lua_pcall(State, 0, 0, 0) != LUA_OK) {
+      const char * errMsg = lua_tostring(State, -1);
+
+      Serial.println("error calling draw");
+      Serial.println(errMsg);
+      while (true) {}
+    }
   }
 }

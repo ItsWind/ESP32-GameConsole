@@ -3,9 +3,8 @@
 #include "Constants.h"
 #include "Input.h"
 #include "TFTImp.h"
+#include "FileImp.h"
 #include "LuaImp.h"
-
-LuaImp lua;
 
 void initPins() {
   // Left (drive) stick
@@ -29,21 +28,17 @@ void initPins() {
 unsigned long oldTime = 0;
 void setup() {
   Serial.begin(115200);
+  delay(1000);
+
+  FileImp::Init();
 
   initPins();
 
-  tft.init();
-  tft.setRotation(45);
-  tft.fillScreen(TFT_BLACK);
-  tft.setTextColor(TFT_WHITE);
-  tft.setTextWrap(false);
-  tft.setCursor(0, 0);
+  TFTImp::Init();
 
-  tft.println("DISPLAY STARTED");
+  LuaImp::InitializeGame();
 
-  lua.InitializeGame();
-
-  lua.SendInit();
+  LuaImp::SendInit();
 
   // SET LOOP TIME AT END OF setup
   oldTime = micros();
@@ -68,26 +63,16 @@ void loop() {
 
   fixedUpdateTimer += dt;
   
-  checkButtonInputs(dt);
+  Input::CheckButtonInputs(dt);
 
-  lua.SendUpdate(dt);
+  LuaImp::SendUpdate(dt);
 
   while (fixedUpdateTimer >= FIXED_UPDATE_TIME_NEEDED) {
-    lua.SendFixedUpdate(FIXED_UPDATE_TIME_NEEDED);
+    LuaImp::SendFixedUpdate(FIXED_UPDATE_TIME_NEEDED);
     fixedUpdateTimer -= FIXED_UPDATE_TIME_NEEDED;
   }
 
-  tftFrameSprite.deleteSprite();
-  tftFrameSprite = TFT_eSprite(&tft);
-  tftFrameSprite.createSprite(tft.width(), tft.height());
-  tftFrameSprite.fillSprite(TFT_BLACK);
-  lua.SendDraw();
-  tftFrameSprite.setCursor(0, 0);
-  tftFrameSprite.setTextSize(1);
-
-  char frameFPSBuf[5];
-  sprintf(frameFPSBuf, "%.2f", 1000000.0 / dt);
-
-  tftFrameSprite.print(frameFPSBuf);
-  tftFrameSprite.pushSprite(0, 0);
+  TFTImp::PrepareNewFrameSprite();
+  LuaImp::SendDraw();
+  TFTImp::PushCurrentFrameSprite(dt);
 }
