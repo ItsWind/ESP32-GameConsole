@@ -1,12 +1,21 @@
 #include "MenuImp.h"
 
+// Forward declare game init
+namespace LuaImp {
+  void InitializeGame();
+}
+
 namespace MenuImp {
   Menu MenuList[1] = {
     {
-      /*[dt] {
-        // Update
-      },*/
-      [] {
+      [](unsigned long dt) {
+        if (Input::Buttons[0].justPressed) {
+          LuaImp::InitializeGame();
+
+          SetMenuTo(-1);
+        }
+      },
+      []() {
         TFTImp::FrameSprite.fillSprite(TFT_BLUE);
         TFTImp::FrameSprite.setTextColor(TFT_WHITE);
         TFTImp::DrawCenteredText(TFTImp::Screen.width() / 2, TFTImp::Screen.height() / 2, "Hello!");

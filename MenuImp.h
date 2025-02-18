@@ -5,7 +5,7 @@
 
 namespace MenuImp {
   struct Menu {
-    //void (*Update)(unsigned long dt);
+    void (*Update)(unsigned long dt);
     void (*Draw)();
   };
 

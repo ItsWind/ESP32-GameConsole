@@ -28,19 +28,21 @@ void initPins() {
 // Time variables for loop (SET AT END OF setup)
 unsigned long oldTime = 0;
 void setup() {
-  Serial.begin(115200);
-  delay(1000);
-
-  FileImp::Init();
-
   initPins();
 
   TFTImp::Init();
+
+  TFTImp::Screen.println("Beginning serial");
+  Serial.begin(115200);
+
+  TFTImp::Screen.println("Beginning file directory");
+  FileImp::Init();
 
   //LuaImp::InitializeGame();
 
   //LuaImp::SendInit();
 
+  TFTImp::Screen.println("YEEEER");
   // SET LOOP TIME AT END OF setup
   oldTime = micros();
 }
@@ -75,7 +77,7 @@ void loop() {
     }
   }
   else {
-    //MenuImp::CurrentMenu->Update(dt);
+    MenuImp::CurrentMenu->Update(dt);
   }
 
   TFTImp::PrepareNewFrameSprite();
