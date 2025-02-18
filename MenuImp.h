@@ -3,13 +3,24 @@
 #include <Arduino.h>
 
 namespace MenuImp {
-  struct Menu {
-    void (*Update)(unsigned long dt);
-    void (*Draw)();
+  class Menu {
+    public:
+      virtual void Init();
+      virtual void Destroy();
+      virtual void Update(unsigned long dt);
+      virtual void Draw();
   };
 
-  extern Menu MenuList[1];
-  extern Menu * CurrentMenu;
+  class MainMenu : public Menu {
+    public:
+      void Init() override;
+      void Destroy() override;
+      void Update(unsigned long dt) override;
+      void Draw() override;
+  };
 
-  void SetMenuTo(int8_t index);
+  void SetMenu(Menu * newMenu);
+  void OpenMainMenu();
+
+  extern Menu * CurrentMenu;
 }

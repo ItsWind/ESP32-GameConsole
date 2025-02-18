@@ -101,6 +101,11 @@ end
 
 local xMultDebug = 1
 function Update(dt)
+  if getInputButtonPressed("BUTTON_CENTER") then
+    closeGame()
+    return
+  end
+
   guyMan.update(dt)
 
   if walls[1].box.x > 90 then

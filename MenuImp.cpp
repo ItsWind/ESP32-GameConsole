@@ -1,33 +1,48 @@
 #include "MenuImp.h"
 #include "Input.h"
+#include "FileImp.h"
 #include "TFTImp.h"
 #include "LuaImp.h"
 
 namespace MenuImp {
-  Menu MenuList[1] = {
-    {
-      [](unsigned long dt) {
-        if (Input::Buttons[0].justPressed) {
-          LuaImp::InitializeGame();
+  Menu * CurrentMenu = nullptr;//new Menu();
 
-          SetMenuTo(-1);
-        }
-      },
-      []() {
-        TFTImp::FrameSprite.fillSprite(TFT_BLUE);
-        TFTImp::FrameSprite.setTextColor(TFT_WHITE);
-        TFTImp::DrawCenteredText(TFTImp::Screen.width() / 2, TFTImp::Screen.height() / 2, "Hello!");
-      }
-    }
-  };
-  Menu * CurrentMenu = &MenuList[0];
+  // BASE MENU
+  void Menu::Init() {}
+  void Menu::Destroy() {}
+  void Menu::Update(unsigned long dt) {}
+  void Menu::Draw() {}
 
-  void SetMenuTo(int8_t index) {
-    if (index < 0) {
-      CurrentMenu = nullptr; 
+  // MAIN MENU
+  void MainMenu::Init() {}
+  void MainMenu::Destroy() {}
+  void MainMenu::Update(unsigned long dt) {
+    if (Input::Buttons[0].justPressed) {
+      LuaImp::InitializeGame();
+
+      SetMenu(nullptr);
     }
-    else {
-      CurrentMenu = &MenuList[index];
+  }
+  void MainMenu::Draw() {
+    TFTImp::FrameSprite.fillSprite(TFT_BLUE);
+    TFTImp::FrameSprite.setTextColor(TFT_WHITE);
+    TFTImp::DrawCenteredText(TFTImp::Screen.width() / 2, TFTImp::Screen.height() / 2, "Hello!");
+  }
+  
+  void SetMenu(Menu * newMenu) {
+    if (CurrentMenu != nullptr) {
+      CurrentMenu->Destroy();
+      delete CurrentMenu;
     }
+
+    CurrentMenu = newMenu;
+
+    if (CurrentMenu != nullptr) {
+      CurrentMenu->Init();
+    }
+  }
+
+  void OpenMainMenu() {
+    SetMenu(new MainMenu());
   }
 }

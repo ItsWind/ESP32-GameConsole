@@ -38,11 +38,9 @@ void setup() {
   TFTImp::Screen.println("Beginning file directory");
   FileImp::Init();
 
-  //LuaImp::InitializeGame();
+  TFTImp::Screen.println("Opening main menu");
+  MenuImp::OpenMainMenu();
 
-  //LuaImp::SendInit();
-
-  TFTImp::Screen.println("YEEEER");
   // SET LOOP TIME AT END OF setup
   oldTime = micros();
 }
@@ -66,26 +64,27 @@ void loop() {
   
   Input::CheckButtonInputs(dt);
 
-  if (MenuImp::CurrentMenu == nullptr && LuaImp::State != nullptr) {
+  if (LuaImp::State != nullptr) {
     fixedUpdateTimer += dt;
 
     LuaImp::SendUpdate(dt);
 
-    while (fixedUpdateTimer >= FIXED_UPDATE_TIME_NEEDED) {
+    // Check if game was closed in Update() or a previous FixedUpdate()
+    while (LuaImp::State != nullptr && fixedUpdateTimer >= FIXED_UPDATE_TIME_NEEDED) {
       LuaImp::SendFixedUpdate(FIXED_UPDATE_TIME_NEEDED);
       fixedUpdateTimer -= FIXED_UPDATE_TIME_NEEDED;
     }
   }
-  else {
+  else if (MenuImp::CurrentMenu != nullptr) {
     MenuImp::CurrentMenu->Update(dt);
   }
 
   TFTImp::PrepareNewFrameSprite();
 
-  if (MenuImp::CurrentMenu == nullptr && LuaImp::State != nullptr) {
+  if (LuaImp::State != nullptr) {
     LuaImp::SendDraw();
   }
-  else {
+  else if (MenuImp::CurrentMenu != nullptr) {
     MenuImp::CurrentMenu->Draw();
   }
 
