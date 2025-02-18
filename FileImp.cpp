@@ -14,4 +14,22 @@ namespace FileImp {
       }
     }
   }
+
+  void CreateDirectory(const char * dirName) {
+    if (LittleFS.mkdir(dirName)) {
+      Serial.println("Directory created");
+    }
+    else {
+      Serial.println("Directory failed");
+    }
+  }
+
+  void RemoveDirectory(const char * dirName) {
+    if (LittleFS.rmdir(dirName)) {
+      Serial.println("Directory removed");
+    }
+    else {
+      Serial.println("Directory failed to remove");
+    }
+  }
 }

@@ -9,8 +9,8 @@ namespace Input {
     bool toggled;
     const char * inputName;
 
-    bool justPressed = false;
-    bool justReleased = false;
+    bool justPressed;
+    bool justReleased;
   };
   extern Button Buttons[7];
 

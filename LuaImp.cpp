@@ -200,9 +200,22 @@
 //}
 
 namespace LuaImp {
-  lua_State * State;
+  lua_State * State = nullptr;
+
+  void CloseGame() {
+    if (State == nullptr) {
+      return;
+    }
+
+    lua_close(State);
+    State = nullptr;
+  }
 
   void InitializeGame() {
+    if (State != nullptr) {
+      return;
+    }
+
     State = luaL_newstate();
 
     // Load base libs
@@ -233,6 +246,8 @@ namespace LuaImp {
 
     // Do file str
     Serial.print(luaL_dostring(State, LUA_FILE_STR));
+
+    SendInit();
   }
 
   void SendInit() {

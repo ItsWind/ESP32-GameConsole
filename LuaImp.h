@@ -14,6 +14,7 @@
 namespace LuaImp {
   extern lua_State * State;
   
+  void CloseGame();
   void InitializeGame();
   void SendInit();
   void SendUpdate(unsigned long dt);

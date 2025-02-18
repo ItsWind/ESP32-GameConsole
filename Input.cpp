@@ -2,13 +2,13 @@
 
 namespace Input {
   Button Buttons[7] = {
-    {DPAD_CENTER_PIN, 0, false, "BUTTON_CENTER"},
-    {DPAD_UP_PIN, 0, false, "BUTTON_UP"},
-    {DPAD_RIGHT_PIN, 0, false, "BUTTON_RIGHT"},
-    {DPAD_DOWN_PIN, 0, false, "BUTTON_DOWN"},
-    {DPAD_LEFT_PIN, 0, false, "BUTTON_LEFT"},
-    {JOYSTICK_LEFT_BUTTON_PIN, 0, false, "BUTTON_JOYSTICK_LEFT"},
-    {JOYSTICK_RIGHT_BUTTON_PIN, 0, false, "BUTTON_JOYSTICK_RIGHT"}
+    {DPAD_CENTER_PIN, 0, false, "BUTTON_CENTER", false, false},
+    {DPAD_UP_PIN, 0, false, "BUTTON_UP", false, false},
+    {DPAD_RIGHT_PIN, 0, false, "BUTTON_RIGHT", false, false},
+    {DPAD_DOWN_PIN, 0, false, "BUTTON_DOWN", false, false},
+    {DPAD_LEFT_PIN, 0, false, "BUTTON_LEFT", false, false},
+    {JOYSTICK_LEFT_BUTTON_PIN, 0, false, "BUTTON_JOYSTICK_LEFT", false, false},
+    {JOYSTICK_RIGHT_BUTTON_PIN, 0, false, "BUTTON_JOYSTICK_RIGHT", false, false}
   };
 
   void CheckButtonInputs(unsigned long dt) {

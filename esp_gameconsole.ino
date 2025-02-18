@@ -3,6 +3,7 @@
 #include "Constants.h"
 #include "Input.h"
 #include "TFTImp.h"
+#include "MenuImp.h"
 #include "FileImp.h"
 #include "LuaImp.h"
 
@@ -36,9 +37,9 @@ void setup() {
 
   TFTImp::Init();
 
-  LuaImp::InitializeGame();
+  //LuaImp::InitializeGame();
 
-  LuaImp::SendInit();
+  //LuaImp::SendInit();
 
   // SET LOOP TIME AT END OF setup
   oldTime = micros();
@@ -60,19 +61,31 @@ void loop() {
     dt = thisTime - oldTime;
   }
   oldTime = thisTime;
-
-  fixedUpdateTimer += dt;
   
   Input::CheckButtonInputs(dt);
 
-  LuaImp::SendUpdate(dt);
+  if (MenuImp::CurrentMenu == nullptr && LuaImp::State != nullptr) {
+    fixedUpdateTimer += dt;
 
-  while (fixedUpdateTimer >= FIXED_UPDATE_TIME_NEEDED) {
-    LuaImp::SendFixedUpdate(FIXED_UPDATE_TIME_NEEDED);
-    fixedUpdateTimer -= FIXED_UPDATE_TIME_NEEDED;
+    LuaImp::SendUpdate(dt);
+
+    while (fixedUpdateTimer >= FIXED_UPDATE_TIME_NEEDED) {
+      LuaImp::SendFixedUpdate(FIXED_UPDATE_TIME_NEEDED);
+      fixedUpdateTimer -= FIXED_UPDATE_TIME_NEEDED;
+    }
+  }
+  else {
+    //MenuImp::CurrentMenu->Update(dt);
   }
 
   TFTImp::PrepareNewFrameSprite();
-  LuaImp::SendDraw();
+
+  if (MenuImp::CurrentMenu == nullptr && LuaImp::State != nullptr) {
+    LuaImp::SendDraw();
+  }
+  else {
+    MenuImp::CurrentMenu->Draw();
+  }
+
   TFTImp::PushCurrentFrameSprite(dt);
 }
