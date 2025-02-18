@@ -1,7 +1,6 @@
 #pragma once
 
-#include "FS.h"
-#include "LittleFS.h"
+#include <Arduino.h>
 
 namespace FileImp {
   void Init();

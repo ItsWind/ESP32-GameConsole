@@ -1,7 +1,6 @@
 #pragma once
 
-#include "Input.h"
-#include "TFTImp.h"
+#include <Arduino.h>
 
 namespace MenuImp {
   struct Menu {

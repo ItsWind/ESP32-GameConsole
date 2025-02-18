@@ -1,7 +1,8 @@
 #pragma once
 
-#include <TFT_eSPI.h>
+#include <Arduino.h>
 #include <SPI.h>
+#include <TFT_eSPI.h>
 
 namespace TFTImp {
   extern TFT_eSPI Screen;

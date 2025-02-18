@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Constants.h"
+#include <Arduino.h>
 
 namespace Input {
   struct Button {

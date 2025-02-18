@@ -1,9 +1,7 @@
 #include "MenuImp.h"
-
-// Forward declare game init
-namespace LuaImp {
-  void InitializeGame();
-}
+#include "Input.h"
+#include "TFTImp.h"
+#include "LuaImp.h"
 
 namespace MenuImp {
   Menu MenuList[1] = {

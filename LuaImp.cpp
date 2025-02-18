@@ -1,4 +1,11 @@
 #include "LuaImp.h"
+#include "Util.h"
+#include "Constants.h"
+#include "Input.h"
+#include "TFTImp.h"
+#include "MenuImp.h"
+#include "SimpleCollisionsFileStr.h"
+#include "LuaFileStr.h"
 
 //extern "C" {
   static int luaPrint(lua_State * state) {
