@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include "NetImp.h"
 #include "Util.h"
 #include "Constants.h"
 #include "Input.h"
@@ -32,6 +33,9 @@ void setup() {
 
   TFTImp::Init();
 
+  TFTImp::Screen.println("Establishing wifi connection");
+  NetImp::Init();
+
   TFTImp::Screen.println("Beginning serial");
   Serial.begin(115200);
 
@@ -48,6 +52,8 @@ void setup() {
 const uint16_t FIXED_UPDATE_TIME_NEEDED = 33333; // 16667
 unsigned long fixedUpdateTimer = 0;
 void loop() {
+  NetImp::CheckConnection();
+
   unsigned long thisTime = micros();
   unsigned long dt = 0;
   // Handle overflow

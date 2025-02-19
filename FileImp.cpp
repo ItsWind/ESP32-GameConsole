@@ -34,4 +34,17 @@ namespace FileImp {
       Serial.println("Directory failed to remove");
     }
   }
+
+  bool AppendBytesToGameFile(const char * dirAndFileName, const uint8_t * bytes, uint length) {
+    String fullPath = "/games/" + String(dirAndFileName);
+    bool wrote = false;
+
+    File file = LittleFS.open(fullPath.c_str(), FILE_APPEND, true);
+    if (file) {
+      wrote = true;
+      file.write(bytes, length);
+    }
+    file.close();
+    return wrote;
+  }
 }
