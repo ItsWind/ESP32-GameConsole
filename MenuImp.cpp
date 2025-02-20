@@ -19,7 +19,6 @@ namespace MenuImp {
   void MainMenu::Destroy() {}
   void MainMenu::Update(unsigned long dt) {
     if (Input::Buttons[0].justPressed) {
-      //LuaImp::InitializeGame();
       LuaImp::InitializeGame("test");
 
       SetMenu(nullptr);

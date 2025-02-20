@@ -7,6 +7,7 @@
 
 namespace LuaImp {
   extern lua_State * State;
+  extern const char * CurrentGameDirName;
   
   void CloseGame();
   void InitializeGame(const char * gameDirName);

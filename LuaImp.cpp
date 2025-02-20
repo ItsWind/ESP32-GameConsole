@@ -96,6 +96,23 @@ static int luaRequire(lua_State * state) {
     
     return 1;
   }
+  lua_pop(state, 1); // pop package.preload.reqStrName [reqStrName, package.loaded]
+  lua_pop(state, 1); // pop package.loaded [reqStrName]
+
+  // Check file system for file require
+  String filePathForRequire = "/games/" + String(LuaImp::CurrentGameDirName) + "/" + String(reqStrName) + ".lua";
+  const char * fileData = FileImp::GetFileData(filePathForRequire.c_str());
+  if (fileData != nullptr) {
+    String loadFileStr = "package.preload." + String(reqStrName) + " = function() " + String(fileData) + " end";
+    luaL_dostring(state, loadFileStr.c_str());
+
+    delete[] fileData;
+
+    // Redo require with package.preload.reqStrName loaded
+    return luaRequire(state);
+  }
+
+  // Nothing found, pop all and return nothing
   lua_pop(state, lua_gettop(state));
   
   return 0;
@@ -213,6 +230,7 @@ static int luaDrawBox(lua_State * state) {//(int32_t x, int32_t y, int32_t w, in
 
 namespace LuaImp {
   lua_State * State = nullptr;
+  const char * CurrentGameDirName = nullptr;
 
   void CloseGame() {
     if (State == nullptr) {
@@ -222,6 +240,7 @@ namespace LuaImp {
     lua_pop(State, lua_gettop(State));
     lua_close(State);
     State = nullptr;
+    CurrentGameDirName = nullptr;
   }
 
   void InitializeGame(const char * gameDirName) {
@@ -234,6 +253,7 @@ namespace LuaImp {
       return;
     }
 
+    CurrentGameDirName = gameDirName;
     State = luaL_newstate();
 
     // Load base libs

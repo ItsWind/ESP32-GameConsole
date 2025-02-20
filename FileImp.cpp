@@ -35,10 +35,53 @@ namespace FileImp {
     }
   }
 
-  void RemoveFile(const char * dirAndFileName) {
-    String fullPath = "/games/" + String(dirAndFileName);
+  void RemoveFile(const char * filePath) {
+    if (LittleFS.remove(filePath)) {
+      Serial.println("File removed");
+    }
+    else {
+      Serial.println("File failed to remove");
+    }
+  }
 
-    LittleFS.remove(fullPath.c_str());
+  void NukeDirectory(const char * dirName) {
+    File root = LittleFS.open(dirName);
+    if (!root) {
+      Serial.println("Directory to nuke not found");
+      return;
+    }
+    if (!root.isDirectory()) {
+      Serial.println("Directory to nuke is not directory");
+      return;
+    }
+
+    File file = root.openNextFile();
+    while (file) {
+      bool isDirectory = file.isDirectory();
+      String filePath = String(file.path());
+      file.close();
+      Serial.println(filePath.c_str());
+
+      if (isDirectory) {
+        Serial.print("DIR FOUND PATH ");
+        Serial.println(filePath.c_str());
+        NukeDirectory(filePath.c_str());
+      }
+      else {
+        Serial.print("FILE FOUND PATH ");
+        Serial.println(filePath.c_str());
+        RemoveFile(filePath.c_str());
+      }
+      file = root.openNextFile();
+    }
+
+    root.close();
+
+    if (strcmp(dirName, "/") != 0) {
+      Serial.print("REMOVING ROOT ");
+      Serial.println(dirName);
+      RemoveDirectory(dirName);
+    }
   }
 
   bool AppendBytesToGameFile(const char * dirAndFileName, const uint8_t * bytes, uint length) {
@@ -54,29 +97,29 @@ namespace FileImp {
     return wrote;
   }
 
-  char * GetGameMainData(const char * gameDirName) {
-    String fullPath = "/games/" + String(gameDirName);
-    if (!LittleFS.exists(fullPath.c_str())) {
-      Serial.println("Game directory does not exist");
+  char * GetFileData(const char * filePath) {
+    if (!LittleFS.exists(filePath)) {
+      Serial.println("File does not exist");
       return nullptr;
     }
-
-    fullPath += String("/main.lua");
     
-    File mainFile = LittleFS.open(fullPath.c_str(), FILE_READ);
-    if (!mainFile) {
-      Serial.println("Main file does not exist");
+    File file = LittleFS.open(filePath, FILE_READ);
+    if (!file) {
+      Serial.println("File cannot be opened");
       return nullptr;
     }
 
-    char * mainFileData = new char[mainFile.size() + 1];
-    mainFile.readBytes(mainFileData, mainFile.size());
-    mainFileData[mainFile.size()] = '\0';
+    char * fileData = new char[file.size() + 1];
+    file.readBytes(fileData, file.size());
+    fileData[file.size()] = '\0';
 
-    mainFile.close();
+    file.close();
 
-    //Serial.println(mainFileData);
+    return fileData;
+  }
 
-    return mainFileData;
+  char * GetGameMainData(const char * gameDirName) {
+    String fullPath = "/games/" + String(gameDirName) + "/main.lua";
+    return GetFileData(fullPath.c_str());
   }
 }
