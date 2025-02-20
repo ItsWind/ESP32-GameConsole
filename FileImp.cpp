@@ -35,6 +35,12 @@ namespace FileImp {
     }
   }
 
+  void RemoveFile(const char * dirAndFileName) {
+    String fullPath = "/games/" + String(dirAndFileName);
+
+    LittleFS.remove(fullPath.c_str());
+  }
+
   bool AppendBytesToGameFile(const char * dirAndFileName, const uint8_t * bytes, uint length) {
     String fullPath = "/games/" + String(dirAndFileName);
     bool wrote = false;
@@ -46,5 +52,31 @@ namespace FileImp {
     }
     file.close();
     return wrote;
+  }
+
+  char * GetGameMainData(const char * gameDirName) {
+    String fullPath = "/games/" + String(gameDirName);
+    if (!LittleFS.exists(fullPath.c_str())) {
+      Serial.println("Game directory does not exist");
+      return nullptr;
+    }
+
+    fullPath += String("/main.lua");
+    
+    File mainFile = LittleFS.open(fullPath.c_str(), FILE_READ);
+    if (!mainFile) {
+      Serial.println("Main file does not exist");
+      return nullptr;
+    }
+
+    char * mainFileData = new char[mainFile.size() + 1];
+    mainFile.readBytes(mainFileData, mainFile.size());
+    mainFileData[mainFile.size()] = '\0';
+
+    mainFile.close();
+
+    //Serial.println(mainFileData);
+
+    return mainFileData;
   }
 }

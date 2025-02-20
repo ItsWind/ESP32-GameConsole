@@ -9,7 +9,7 @@ namespace LuaImp {
   extern lua_State * State;
   
   void CloseGame();
-  void InitializeGame();
+  void InitializeGame(const char * gameDirName);
   void SendInit();
   void SendUpdate(unsigned long dt);
   void SendFixedUpdate(unsigned long dt);

@@ -4,6 +4,7 @@
 #include "Input.h"
 #include "TFTImp.h"
 #include "MenuImp.h"
+#include "FileImp.h"
 #include "SimpleCollisionsFileStr.h"
 #include "LuaFileStr.h"
 
@@ -223,8 +224,13 @@ namespace LuaImp {
     State = nullptr;
   }
 
-  void InitializeGame() {
+  void InitializeGame(const char * gameDirName) {
     if (State != nullptr) {
+      return;
+    }
+
+    const char * gameMainData = FileImp::GetGameMainData(gameDirName);
+    if (gameMainData == nullptr) {
       return;
     }
 
@@ -258,7 +264,9 @@ namespace LuaImp {
     Serial.println("Hello?");
 
     // Do file str
-    Serial.print(luaL_dostring(State, LUA_FILE_STR));
+    Serial.println(gameMainData);
+    Serial.print(luaL_dostring(State, gameMainData));
+    delete[] gameMainData;
 
     SendInit();
   }
