@@ -103,7 +103,7 @@ static int luaRequire(lua_State * state) {
   String filePathForRequire = "/games/" + String(LuaImp::CurrentGameDirName) + "/" + String(reqStrName) + ".lua";
   const char * fileData = FileImp::GetFileData(filePathForRequire.c_str());
   if (fileData != nullptr) {
-    String loadFileStr = "package.preload." + String(reqStrName) + " = function() " + String(fileData) + " end";
+    String loadFileStr = "package.preload[\"" + String(reqStrName) + "\"] = function() " + String(fileData) + " end";
     luaL_dostring(state, loadFileStr.c_str());
 
     delete[] fileData;
@@ -274,7 +274,7 @@ namespace LuaImp {
 
     luaL_dostring(State, "package = {}\npackage.preload = {}\npackage.loaded = {}");
     
-    String loadSimpleCols = "package.preload.SimpleCollisions = function() " + String(SIMPLE_COLLISIONS_FILE_STR) + " end";
+    String loadSimpleCols = "package.preload[\"SimpleCollisions\"] = function() " + String(SIMPLE_COLLISIONS_FILE_STR) + " end";
     luaL_dostring(State, loadSimpleCols.c_str());
 
     // Seed random
