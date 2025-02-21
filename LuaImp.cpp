@@ -262,6 +262,8 @@ namespace LuaImp {
 
     luaL_dostring(State, "package = {}\npackage.preload = {}\npackage.loaded = {}");
 
+    luaL_dostring(State, "fool = {}\nfool.Init = function() end\nfool.Update = function(dt) end\nfool.FixedUpdate = function(dt) end\nfool.Draw = function() end");
+
     lua_register(State, "closeGame", luaCloseGame);
     lua_register(State, "print", luaPrint);
     lua_register(State, "require", luaRequire);
@@ -284,7 +286,10 @@ namespace LuaImp {
   }
 
   void SendInit() {
-    lua_getglobal(State, "Init");
+    lua_getglobal(State, "fool");
+    lua_getfield(State, -1, "Init");
+    lua_remove(State, -2);
+    //lua_getglobal(State, "Init");
     if (lua_pcall(State, 0, 0, 0) != LUA_OK) {
       const char * errMsg = lua_tostring(State, -1);
 
@@ -295,7 +300,10 @@ namespace LuaImp {
   }
 
   void SendUpdate(unsigned long dt) {
-    lua_getglobal(State, "Update");
+    lua_getglobal(State, "fool");
+    lua_getfield(State, -1, "Update");
+    lua_remove(State, -2);
+    //lua_getglobal(State, "Update");
     lua_pushnumber(State, (double)dt / 1000000.0);
     if (lua_pcall(State, 1, 0, 0) != LUA_OK) {
       const char * errMsg = lua_tostring(State, -1);
@@ -307,7 +315,10 @@ namespace LuaImp {
   }
 
   void SendFixedUpdate(unsigned long dt) {
-    lua_getglobal(State, "FixedUpdate");
+    lua_getglobal(State, "fool");
+    lua_getfield(State, -1, "FixedUpdate");
+    lua_remove(State, -2);
+    //lua_getglobal(State, "FixedUpdate");
     lua_pushnumber(State, (double)dt / 1000000.0);
     if (lua_pcall(State, 1, 0, 0) != LUA_OK) {
       const char * errMsg = lua_tostring(State, -1);
@@ -319,7 +330,10 @@ namespace LuaImp {
   }
 
   void SendDraw() {
-    lua_getglobal(State, "Draw");
+    lua_getglobal(State, "fool");
+    lua_getfield(State, -1, "Draw");
+    lua_remove(State, -2);
+    //lua_getglobal(State, "Draw");
     if (lua_pcall(State, 0, 0, 0) != LUA_OK) {
       const char * errMsg = lua_tostring(State, -1);
 

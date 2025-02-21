@@ -3,6 +3,7 @@
 #include "TFTImp.h"
 #include "FileImp.h"
 
+static unsigned long downloadingFilePulse = 0;
 static char * fileDirNameDownloading = nullptr;
 static uint16_t currentChunkNum = 0;
 
@@ -29,6 +30,7 @@ static void beginUDPMasterConnection() {
         // 1 = getting dir/file.extension, prefixes {1}
         case 1:
         {
+          downloadingFilePulse = 0;
           if (fileDirNameDownloading != nullptr) {
             delete[] fileDirNameDownloading;
           }
@@ -47,12 +49,24 @@ static void beginUDPMasterConnection() {
         // 2 = getting chunk of above dirFilePath, prefixes {2, chunkNumByte1, chunkNumByte2}
         case 2:
         {
+          if (fileDirNameDownloading == nullptr) {
+            return;
+          }
+          downloadingFilePulse = 0;
+          
           uint16_t chunkNum = (bytes[1] << 8) | bytes[2];
           Serial.println(bytes[1]);
           Serial.println(bytes[2]);
           Serial.println(chunkNum);
 
-          if (chunkNum != currentChunkNum) {
+          if (chunkNum < currentChunkNum) {
+            Serial.println("Caught resend current chunk num error");
+            uint8_t bytesBackChunk[] = {4, bytes[1], bytes[2]};
+            NetImp::UDP.write(bytesBackChunk, 3);
+            return;
+          }
+          else if (chunkNum > currentChunkNum) {
+            Serial.println("FATAL DOWNLOAD ERROR. CHUNK NUM GREATER THAN CURRENT. THIS SHOULD NOT HAPPEN AT ALL.");
             return;
           }
           currentChunkNum++;
@@ -71,6 +85,7 @@ static void beginUDPMasterConnection() {
 }
 
 namespace NetImp {
+  bool DownloadingGame = false;
   const char * WifiSsid = SECRET_WIFI_SSID;
   const char * WifiPass = SECRET_WIFI_PASS;
 
@@ -95,6 +110,25 @@ namespace NetImp {
     if (WiFi.waitForConnectResult() == WL_CONNECTED) {
       Serial.println("Beginning UDP connection.");
       beginUDPMasterConnection();
+    }
+  }
+
+  void StartGameDownload(uint8_t index) {
+    uint8_t bytes[] = {1, index};
+    UDP.write(bytes, 2);
+  }
+
+  void CheckGameDownloadPulse(unsigned long dt) {
+    if (fileDirNameDownloading == nullptr) {
+      return;
+    }
+
+    DownloadingGame = true;
+    downloadingFilePulse += dt;
+    if (downloadingFilePulse >= 5000000) {
+      downloadingFilePulse = 0;
+      fileDirNameDownloading = nullptr;
+      DownloadingGame = false;
     }
   }
 }

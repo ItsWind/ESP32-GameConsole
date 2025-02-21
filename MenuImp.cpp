@@ -24,8 +24,7 @@ namespace MenuImp {
       SetMenu(nullptr);
     }
     else if (Input::Buttons[1].justPressed) {
-      uint8_t bytes[] = {1, 1};
-      NetImp::UDP.write(bytes, 2);
+      NetImp::StartGameDownload(1);
     }
   }
   void MainMenu::Draw() {

@@ -67,6 +67,8 @@ void loop() {
     dt = thisTime - oldTime;
   }
   oldTime = thisTime;
+
+  NetImp::CheckGameDownloadPulse(dt);
   
   Input::CheckButtonInputs(dt);
 
@@ -91,7 +93,12 @@ void loop() {
     LuaImp::SendDraw();
   }
   else if (MenuImp::CurrentMenu != nullptr) {
-    MenuImp::CurrentMenu->Draw();
+    if (NetImp::DownloadingGame) {
+      //TFTImp::FrameSprite.
+    }
+    else {
+      MenuImp::CurrentMenu->Draw();
+    }
   }
 
   TFTImp::PushCurrentFrameSprite(dt);
