@@ -5,8 +5,6 @@
 #include "TFTImp.h"
 #include "MenuImp.h"
 #include "FileImp.h"
-#include "SimpleCollisionsFileStr.h"
-#include "LuaFileStr.h"
 
 static int luaCloseGame(lua_State * state) {
   LuaImp::CloseGame();
@@ -262,6 +260,8 @@ namespace LuaImp {
     luaopen_string(State);
     luaopen_math(State);
 
+    luaL_dostring(State, "package = {}\npackage.preload = {}\npackage.loaded = {}");
+
     lua_register(State, "closeGame", luaCloseGame);
     lua_register(State, "print", luaPrint);
     lua_register(State, "require", luaRequire);
@@ -272,20 +272,12 @@ namespace LuaImp {
     lua_register(State, "tftPrint", luaTFTPrint);
     lua_register(State, "drawBox", luaDrawBox);
 
-    luaL_dostring(State, "package = {}\npackage.preload = {}\npackage.loaded = {}");
-    
-    String loadSimpleCols = "package.preload[\"SimpleCollisions\"] = function() " + String(SIMPLE_COLLISIONS_FILE_STR) + " end";
-    luaL_dostring(State, loadSimpleCols.c_str());
-
     // Seed random
     String mathRandomSeedStr = "math.randomseed(" + String(random(1, 10000000)) + ")";
     luaL_dostring(State, mathRandomSeedStr.c_str());
 
-    Serial.println("Hello?");
-
-    // Do file str
-    Serial.println(gameMainData);
-    Serial.print(luaL_dostring(State, gameMainData));
+    // Do game main data
+    luaL_dostring(State, gameMainData);
     delete[] gameMainData;
 
     SendInit();
