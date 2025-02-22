@@ -84,7 +84,9 @@ void loop() {
     }
   }
   else if (MenuImp::CurrentMenu != nullptr) {
-    MenuImp::CurrentMenu->Update(dt);
+    if (!NetImp::DownloadingGame) {
+      MenuImp::CurrentMenu->Update(dt);
+    }
   }
 
   TFTImp::PrepareNewFrameSprite();
@@ -94,7 +96,7 @@ void loop() {
   }
   else if (MenuImp::CurrentMenu != nullptr) {
     if (NetImp::DownloadingGame) {
-      //TFTImp::FrameSprite.
+      TFTImp::DrawCenteredText("Downloading game...");
     }
     else {
       MenuImp::CurrentMenu->Draw();

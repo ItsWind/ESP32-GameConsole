@@ -7,37 +7,54 @@ static unsigned long downloadingFilePulse = 0;
 static char * fileDirNameDownloading = nullptr;
 static uint16_t currentChunkNum = 0;
 
+static uint16_t currentFileCount = 0;
+static uint16_t doneFileCount = 0;
+
+static uint32_t currentByteCount = 0;
+static uint32_t doneByteCount = 0;
+
 static void beginUDPMasterConnection() {
   if (NetImp::UDP.connect(IPAddress(54,39,21,229), 33733)) {
     NetImp::UDP.onPacket([](AsyncUDPPacket packet) {
       // Receive packet
       const uint8_t * bytes = packet.data();
       switch (bytes[0]) {
-        // 0 = getting game directory for clearing, prefixes {0}
+        // 0 = getting game directory for clearing, prefixes {0, highFileCountByte, lowFileCountByte}
         case 0:
         {
-          char gameDirectoryName[packet.length()];
-          memcpy(&gameDirectoryName, &bytes[1], packet.length() - 1);
-          gameDirectoryName[packet.length() - 1] = '\0';
+          currentFileCount = (bytes[1] << 8) | bytes[2];
+          doneFileCount = 0;
+          Serial.println(currentFileCount);
+
+          char gameDirectoryName[packet.length() - 2];
+          memcpy(&gameDirectoryName, &bytes[3], packet.length() - 3);
+          gameDirectoryName[packet.length() - 3] = '\0';
 
           String fullPath = "/games/" + String(gameDirectoryName);
+          Serial.println(fullPath.c_str());
           FileImp::NukeDirectory(fullPath.c_str());
 
           uint8_t bytesBackClearedDir[] = {2};
           NetImp::UDP.write(bytesBackClearedDir, 1);
           return;
         }
-        // 1 = getting dir/file.extension, prefixes {1}
+        // 1 = getting dir/file.extension, prefixes {1, b1, b2, b3, b4}
         case 1:
         {
+          currentByteCount = (bytes[1] << 24) | (bytes[2] << 16) | (bytes[3] << 8) | bytes[4];
+          doneByteCount = 0;
+          doneFileCount++;
+          Serial.println(currentByteCount);
+
           downloadingFilePulse = 0;
+
           if (fileDirNameDownloading != nullptr) {
             delete[] fileDirNameDownloading;
           }
 
-          fileDirNameDownloading = new char[packet.length()];
-          memcpy(fileDirNameDownloading, &bytes[1], packet.length() - 1);
-          fileDirNameDownloading[packet.length() - 1] = '\0';
+          fileDirNameDownloading = new char[packet.length() - 4];
+          memcpy(fileDirNameDownloading, &bytes[5], packet.length() - 5);
+          fileDirNameDownloading[packet.length() - 5] = '\0';
           currentChunkNum = 0;
 
           Serial.print("Setting current downloading file to ");
@@ -70,8 +87,11 @@ static void beginUDPMasterConnection() {
             return;
           }
           currentChunkNum++;
+          
+          size_t packetByteCount = packet.length() - 3;
+          doneByteCount += packetByteCount;
 
-          if (FileImp::AppendBytesToGameFile(fileDirNameDownloading, &bytes[3], packet.length() - 3)) {
+          if (FileImp::AppendBytesToGameFile(fileDirNameDownloading, &bytes[3], packetByteCount)) {
             Serial.print("Appended bytes to ");
             Serial.println(fileDirNameDownloading);
             uint8_t bytesBackChunk[] = {4, bytes[1], bytes[2]};
@@ -125,7 +145,7 @@ namespace NetImp {
 
     DownloadingGame = true;
     downloadingFilePulse += dt;
-    if (downloadingFilePulse >= 5000000) {
+    if (downloadingFilePulse >= 2000000) {
       downloadingFilePulse = 0;
       fileDirNameDownloading = nullptr;
       DownloadingGame = false;

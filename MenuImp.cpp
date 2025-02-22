@@ -30,7 +30,7 @@ namespace MenuImp {
   void MainMenu::Draw() {
     TFTImp::FrameSprite.fillSprite(TFT_BLUE);
     TFTImp::FrameSprite.setTextColor(TFT_WHITE);
-    TFTImp::DrawCenteredText(TFTImp::Screen.width() / 2, TFTImp::Screen.height() / 2, "Hello!");
+    TFTImp::DrawCenteredText("Hello!");
   }
   
   void SetMenu(Menu * newMenu) {

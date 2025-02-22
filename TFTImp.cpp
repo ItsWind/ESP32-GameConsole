@@ -40,16 +40,13 @@ namespace TFTImp {
     uint16_t h;
   
     FrameSprite.setTextSize(size);
-  
-    //tft.getTextBounds(text, x, y, &x1, &y1, &w, &h);
-  
     FrameSprite.setCursor(x - (FrameSprite.textWidth(text) / 2), y - (FrameSprite.fontHeight() / 2));
-  
-    //tft.setCursor(x1 - (w / 2), y1 - (h / 2));
     FrameSprite.print(text);
   }
-
   void DrawCenteredText(int16_t x, int16_t y, const char * text) {
     DrawCenteredText(1, x, y, text);
+  }
+  void DrawCenteredText(const char * text) {
+    DrawCenteredText(Screen.width() / 2, Screen.height() / 2, text);
   }
 }

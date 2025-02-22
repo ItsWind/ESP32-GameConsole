@@ -13,4 +13,5 @@ namespace TFTImp {
   void PushCurrentFrameSprite(unsigned long dt);
   void DrawCenteredText(uint8_t size, int16_t x, int16_t y, const char * text);
   void DrawCenteredText(int16_t x, int16_t y, const char * text);
+  void DrawCenteredText(const char * text);
 }
