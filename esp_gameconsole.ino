@@ -52,8 +52,6 @@ void setup() {
 const uint16_t FIXED_UPDATE_TIME_NEEDED = 33333; // 16667
 unsigned long fixedUpdateTimer = 0;
 void loop() {
-  NetImp::CheckConnection();
-
   unsigned long thisTime = micros();
   unsigned long dt = 0;
   // Handle overflow
@@ -68,7 +66,7 @@ void loop() {
   }
   oldTime = thisTime;
 
-  NetImp::CheckGameDownloadPulse(dt);
+  NetImp::Update(dt);
   
   Input::CheckButtonInputs(dt);
 
@@ -96,10 +94,7 @@ void loop() {
   }
   else if (MenuImp::CurrentMenu != nullptr) {
     if (NetImp::DownloadingGame) {
-      TFTImp::DrawCenteredText("Downloading game...");
-      //TFTImp::DrawHGradient(40, 100, 80, 20, TFT_GREEN, TFT_RED);
-      TFTImp::DrawBox(40, 100, 80, 20, TFT_RED);
-      TFTImp::DrawBox(40, 100, (int32_t)(NetImp::GetGameDownloadPercentageDone() * 80.0), 20, TFT_GREEN);
+      NetImp::Draw();
     }
     else {
       MenuImp::CurrentMenu->Draw();

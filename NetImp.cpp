@@ -3,6 +3,9 @@
 #include "TFTImp.h"
 #include "FileImp.h"
 
+static const char * WifiSsid = SECRET_WIFI_SSID;
+static const char * WifiPass = SECRET_WIFI_PASS;
+
 static unsigned long downloadingFilePulse = 0;
 static char * fileDirNameDownloading = nullptr;
 static uint16_t currentChunkNum = 0;
@@ -109,10 +112,35 @@ static void beginUDPMasterConnection() {
   }
 }
 
+static void checkConnection() {
+  if (WiFi.status() == WL_CONNECTED) {
+    return;
+  }
+  Serial.println("Wifi lost. Attempting reconnect.");
+  
+  WiFi.begin(WifiSsid, WifiPass);
+  if (WiFi.waitForConnectResult() == WL_CONNECTED) {
+    Serial.println("Beginning UDP connection.");
+    beginUDPMasterConnection();
+  }
+}
+
+static void checkDownloadPulse(unsigned long dt) {
+  if (fileDirNameDownloading == nullptr) {
+    return;
+  }
+
+  NetImp::DownloadingGame = true;
+  downloadingFilePulse += dt;
+  if (downloadingFilePulse >= 2000000) {
+    downloadingFilePulse = 0;
+    fileDirNameDownloading = nullptr;
+    NetImp::DownloadingGame = false;
+  }
+}
+
 namespace NetImp {
   bool DownloadingGame = false;
-  const char * WifiSsid = SECRET_WIFI_SSID;
-  const char * WifiPass = SECRET_WIFI_PASS;
 
   AsyncUDP UDP;
 
@@ -125,36 +153,26 @@ namespace NetImp {
     }
   }
 
-  void CheckConnection() {
-    if (WiFi.status() == WL_CONNECTED) {
-      return;
-    }
-    Serial.println("Wifi lost. Attempting reconnect.");
-    
-    WiFi.begin(WifiSsid, WifiPass);
-    if (WiFi.waitForConnectResult() == WL_CONNECTED) {
-      Serial.println("Beginning UDP connection.");
-      beginUDPMasterConnection();
-    }
+  void Update(unsigned long dt) {
+    checkConnection();
+    checkDownloadPulse(dt);
+  }
+
+  void Draw() {
+    int16_t screenWidthHalf = TFTImp::Screen.width() / 2;
+    int16_t screenHeightHalf = TFTImp::Screen.height() / 2;
+
+    TFTImp::DrawCenteredText("Downloading game...");
+    TFTImp::DrawCenteredText(screenWidthHalf, screenHeightHalf + 12, fileDirNameDownloading);
+    String fileBytesOutOfBytesStr = "( " + String(doneByteCount) + " / " + String(currentByteCount) + " )";
+    TFTImp::DrawCenteredText(screenWidthHalf, screenHeightHalf + 24, fileBytesOutOfBytesStr.c_str());
+    TFTImp::DrawBox(30, 100, 100, 10, TFT_RED);
+    TFTImp::DrawBox(30, 100, (int32_t)(GetGameDownloadPercentageDone() * 100.0), 10, TFT_GREEN);
   }
 
   void StartGameDownload(uint8_t index) {
     uint8_t bytes[] = {1, index};
     UDP.write(bytes, 2);
-  }
-
-  void CheckGameDownloadPulse(unsigned long dt) {
-    if (fileDirNameDownloading == nullptr) {
-      return;
-    }
-
-    DownloadingGame = true;
-    downloadingFilePulse += dt;
-    if (downloadingFilePulse >= 2000000) {
-      downloadingFilePulse = 0;
-      fileDirNameDownloading = nullptr;
-      DownloadingGame = false;
-    }
   }
 
   float GetGameDownloadPercentageDone() {
