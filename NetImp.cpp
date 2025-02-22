@@ -43,7 +43,6 @@ static void beginUDPMasterConnection() {
         {
           currentByteCount = (bytes[1] << 24) | (bytes[2] << 16) | (bytes[3] << 8) | bytes[4];
           doneByteCount = 0;
-          doneFileCount++;
           Serial.println(currentByteCount);
 
           downloadingFilePulse = 0;
@@ -90,6 +89,12 @@ static void beginUDPMasterConnection() {
           
           size_t packetByteCount = packet.length() - 3;
           doneByteCount += packetByteCount;
+          if (doneByteCount >= currentByteCount) {
+            doneFileCount++;
+            Serial.print("DONE FILE COUNT: ");
+            Serial.println(doneFileCount);
+            Serial.println(NetImp::GetGameDownloadPercentageDone());
+          }
 
           if (FileImp::AppendBytesToGameFile(fileDirNameDownloading, &bytes[3], packetByteCount)) {
             Serial.print("Appended bytes to ");
@@ -150,5 +155,24 @@ namespace NetImp {
       fileDirNameDownloading = nullptr;
       DownloadingGame = false;
     }
+  }
+
+  float GetGameDownloadPercentageDone() {
+    if (!DownloadingGame) {
+      return 0;
+    }
+    else if (doneFileCount >= currentFileCount) {
+      return 1;
+    }
+
+    float baseFilePercentShare = 1.0 / (float)currentFileCount;
+    
+    float currentMinPercent = baseFilePercentShare * doneFileCount;
+    float addToMin = 0;
+    if (doneByteCount < currentByteCount) {
+      addToMin = baseFilePercentShare * ((float)doneByteCount / (float)currentByteCount);
+    }
+
+    return currentMinPercent + addToMin;
   }
 }

@@ -97,6 +97,9 @@ void loop() {
   else if (MenuImp::CurrentMenu != nullptr) {
     if (NetImp::DownloadingGame) {
       TFTImp::DrawCenteredText("Downloading game...");
+      //TFTImp::DrawHGradient(40, 100, 80, 20, TFT_GREEN, TFT_RED);
+      TFTImp::DrawBox(40, 100, 80, 20, TFT_RED);
+      TFTImp::DrawBox(40, 100, (int32_t)(NetImp::GetGameDownloadPercentageDone() * 80.0), 20, TFT_GREEN);
     }
     else {
       MenuImp::CurrentMenu->Draw();

@@ -219,7 +219,7 @@ static int luaDrawBox(lua_State * state) {//(int32_t x, int32_t y, int32_t w, in
   uint8_t g = (uint8_t)lua_tonumber(state, 6);
   uint8_t b = (uint8_t)lua_tonumber(state, 7);
 
-  TFTImp::FrameSprite.fillRect(x, y, w, h, Util::rgb888_to_rgb565(r, g, b));
+  TFTImp::DrawBox(x, y, w, h, Util::rgb888_to_rgb565(r, g, b));
 
   lua_pop(state, 7);
 

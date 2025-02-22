@@ -14,4 +14,5 @@ namespace NetImp {
   void CheckConnection();
   void StartGameDownload(uint8_t index);
   void CheckGameDownloadPulse(unsigned long dt);
+  float GetGameDownloadPercentageDone();
 }
