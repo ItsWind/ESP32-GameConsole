@@ -315,6 +315,17 @@ namespace LuaImp {
   }
 
   void SendFixedUpdate(unsigned long dt) {
+    // Garbage collection limit 50kb usage
+    lua_getglobal(State, "collectgarbage");
+    lua_pushstring(State, "count");
+    lua_call(State, 1, 1);
+    if (lua_tonumber(State, -1) >= 50.0) {
+      lua_getglobal(State, "collectgarbage");
+      lua_pushstring(State, "collect");
+      lua_call(State, 1, 0);
+    }
+    lua_pop(State, 1);
+
     lua_getglobal(State, "fool");
     lua_getfield(State, -1, "FixedUpdate");
     lua_remove(State, -2);

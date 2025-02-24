@@ -134,6 +134,7 @@ static void checkDownloadPulse(unsigned long dt) {
   downloadingFilePulse += dt;
   if (downloadingFilePulse >= 2000000) {
     downloadingFilePulse = 0;
+    delete[] fileDirNameDownloading;
     fileDirNameDownloading = nullptr;
     NetImp::DownloadingGame = false;
   }

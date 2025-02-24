@@ -52,6 +52,8 @@ void setup() {
 const uint16_t FIXED_UPDATE_TIME_NEEDED = 33333; // 16667
 unsigned long fixedUpdateTimer = 0;
 void loop() {
+  Serial.println(heap_caps_get_free_size(MALLOC_CAP_8BIT));
+
   unsigned long thisTime = micros();
   unsigned long dt = 0;
   // Handle overflow

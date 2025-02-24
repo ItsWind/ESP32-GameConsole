@@ -17,7 +17,7 @@ namespace TFTImp {
 
   void PrepareNewFrameSprite() {
     FrameSprite.deleteSprite();
-    FrameSprite = TFT_eSprite(&Screen);
+    //FrameSprite = TFT_eSprite(&Screen);
     FrameSprite.createSprite(Screen.width(), Screen.height());
     FrameSprite.fillSprite(TFT_BLACK);
   }
