@@ -254,15 +254,27 @@ namespace LuaImp {
     CurrentGameDirName = gameDirName;
     State = luaL_newstate();
 
+    // Set garbage collector to collect more often, MCU low ram :(
+    lua_gc(State, LUA_GCSETPAUSE, 100);
+
     // Load base libs
     luaopen_base(State);
     luaopen_table(State);
     luaopen_string(State);
     luaopen_math(State);
 
-    luaL_dostring(State, "package = {}\npackage.preload = {}\npackage.loaded = {}");
+    // Load global tables
+    luaL_dostring(State, R""""(
+      package = {}
+      package.preload = {}
+      package.loaded = {}
 
-    luaL_dostring(State, "fool = {}\nfool.Init = function() end\nfool.Update = function(dt) end\nfool.FixedUpdate = function(dt) end\nfool.Draw = function() end");
+      fool = {}
+      fool.Init = function() end
+      fool.Update = function(dt) end
+      fool.FixedUpdate = function(dt) end
+      fool.Draw = function() end
+    )"""");
 
     lua_register(State, "closeGame", luaCloseGame);
     lua_register(State, "print", luaPrint);
@@ -275,8 +287,11 @@ namespace LuaImp {
     lua_register(State, "drawBox", luaDrawBox);
 
     // Seed random
-    String mathRandomSeedStr = "math.randomseed(" + String(random(1, 10000000)) + ")";
-    luaL_dostring(State, mathRandomSeedStr.c_str());
+    lua_getglobal(State, "math");
+    lua_getfield(State, -1, "randomseed");
+    lua_remove(State, -2);
+    lua_pushnumber(State, random(1, 10000000));
+    lua_call(State, 1, 0);
 
     // Do game main data
     luaL_dostring(State, gameMainData);
@@ -315,17 +330,6 @@ namespace LuaImp {
   }
 
   void SendFixedUpdate(unsigned long dt) {
-    // Garbage collection limit 50kb usage
-    lua_getglobal(State, "collectgarbage");
-    lua_pushstring(State, "count");
-    lua_call(State, 1, 1);
-    if (lua_tonumber(State, -1) >= 50.0) {
-      lua_getglobal(State, "collectgarbage");
-      lua_pushstring(State, "collect");
-      lua_call(State, 1, 0);
-    }
-    lua_pop(State, 1);
-
     lua_getglobal(State, "fool");
     lua_getfield(State, -1, "FixedUpdate");
     lua_remove(State, -2);
