@@ -14,6 +14,24 @@ namespace MenuImp {
   void Menu::Update(unsigned long dt) {}
   void Menu::Draw() {}
 
+  // MESSAGE MENU
+  MessageMenu::MessageMenu(const char * message) {
+    messageToDisplay = message;
+  }
+  void MessageMenu::Init() {}
+  void MessageMenu::Destroy() {}
+  void MessageMenu::Update(unsigned long dt) {
+    if (Input::Buttons[0].justPressed) {
+      SetMenu(new MainMenu());
+    }
+  }
+  void MessageMenu::Draw() {
+    TFTImp::FrameSprite.fillSprite(TFT_BLUE);
+    TFTImp::FrameSprite.setTextColor(TFT_WHITE);
+    TFTImp::DrawCenteredText(messageToDisplay);
+    TFTImp::DrawCenteredText(TFTImp::Screen.width() / 2, TFTImp::Screen.height() / 2 + 16, "OK -> Main Menu");
+  }
+
   // MAIN MENU
   void MainMenu::Init() {}
   void MainMenu::Destroy() {}
@@ -44,9 +62,5 @@ namespace MenuImp {
     if (CurrentMenu != nullptr) {
       CurrentMenu->Init();
     }
-  }
-
-  void OpenMainMenu() {
-    SetMenu(new MainMenu());
   }
 }

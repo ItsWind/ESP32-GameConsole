@@ -8,7 +8,7 @@
 
 static int luaCloseGame(lua_State * state) {
   LuaImp::CloseGame();
-  MenuImp::OpenMainMenu();
+  MenuImp::SetMenu(new MenuImp::MainMenu());
   return 0;
 }
 

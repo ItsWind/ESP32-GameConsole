@@ -43,7 +43,7 @@ void setup() {
   FileImp::Init();
 
   TFTImp::Screen.println("Opening main menu");
-  MenuImp::OpenMainMenu();
+  MenuImp::SetMenu(new MenuImp::MainMenu());
 
   // SET LOOP TIME AT END OF setup
   oldTime = micros();
@@ -52,7 +52,12 @@ void setup() {
 const uint16_t FIXED_UPDATE_TIME_NEEDED = 33333; // 16667
 unsigned long fixedUpdateTimer = 0;
 void loop() {
-  Serial.println(heap_caps_get_free_size(MALLOC_CAP_8BIT));
+  uint32_t currentHeapFree = heap_caps_get_free_size(MALLOC_CAP_8BIT);
+  if (currentHeapFree <= 10000 && LuaImp::State != nullptr) {
+    LuaImp::CloseGame();
+    MenuImp::SetMenu(new MenuImp::MessageMenu("RAM drained. Exited."));
+  }
+  Serial.println(currentHeapFree);
 
   unsigned long thisTime = micros();
   unsigned long dt = 0;

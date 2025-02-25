@@ -11,6 +11,17 @@ namespace MenuImp {
       virtual void Draw();
   };
 
+  class MessageMenu : public Menu {
+    private:
+      const char * messageToDisplay;
+    public:
+      MessageMenu(const char * message);
+      void Init() override;
+      void Destroy() override;
+      void Update(unsigned long dt) override;
+      void Draw() override;
+  };
+
   class MainMenu : public Menu {
     public:
       void Init() override;
@@ -20,7 +31,6 @@ namespace MenuImp {
   };
 
   void SetMenu(Menu * newMenu);
-  void OpenMainMenu();
 
   extern Menu * CurrentMenu;
 }
