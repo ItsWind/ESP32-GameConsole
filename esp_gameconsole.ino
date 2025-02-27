@@ -57,7 +57,7 @@ void loop() {
     LuaImp::CloseGame();
     MenuImp::SetMenu(new MenuImp::MessageMenu("RAM drained. Exited."));
   }
-  //Serial.println(currentHeapFree);
+  Serial.println(currentHeapFree);
 
   unsigned long thisTime = micros();
   unsigned long dt = 0;

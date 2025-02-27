@@ -22,6 +22,14 @@ struct GamePhysObj {
 static uint8_t gamePhysObjsCount = 0;
 static GamePhysObj gamePhysObjs[256];
 
+struct FIMGCached {
+  const char * name;
+  const uint8_t * data;
+  uint32_t dataLen;
+};
+static uint8_t fimgCachedAmount = 0;
+static FIMGCached fimgCache[256];
+
 static int luaCreatePhysObj(lua_State * state) {
   if (gamePhysObjsCount >= 255 || lua_gettop(state) < 5 || !lua_istable(state, 1)) {
     lua_pop(state, lua_gettop(state));
@@ -289,12 +297,41 @@ static int luaDrawFIMG(lua_State * state) {
   int32_t y = (int32_t)lua_tonumber(state, 2);
   const char * filePath = lua_tostring(state, 3);
 
-  String fullPath = "/games/" + String(LuaImp::CurrentGameDirName) + "/" + String(filePath) + ".fimg";
+  int16_t cachedIndex = -1;
+  for (int16_t i = 0; i < fimgCachedAmount; i++) {
+    if (strcmp(fimgCache[i].name, filePath) == 0) {
+      cachedIndex = i;
+      break;
+    }
+  }
+
   uint32_t fileDataLen = 0;
-  const uint8_t * filePathData = (const uint8_t *)FileImp::GetFileData(fullPath.c_str(), &fileDataLen);
+  const uint8_t * filePathData = nullptr;
+
+  if (cachedIndex == -1) {
+    if (fimgCachedAmount >= 255) {
+      LuaImp::CloseGame();
+      MenuImp::SetMenu(new MenuImp::MessageMenu("FIMG cache overflow."));
+      return 0;
+    }
+    String fullPath = "/games/" + String(LuaImp::CurrentGameDirName) + "/" + String(filePath) + ".fimg";
+    filePathData = (const uint8_t *)FileImp::GetFileData(fullPath.c_str(), &fileDataLen);
+
+    size_t filePathStrLen = strlen(filePath);
+    char * filePathCopy = new char[filePathStrLen+1];
+    strcpy(filePathCopy, filePath);
+    filePathCopy[filePathStrLen] = '\0';
+
+    fimgCache[fimgCachedAmount] = {(const char *)filePathCopy, filePathData, fileDataLen};
+    fimgCachedAmount++;
+  }
+  else {
+    fileDataLen = fimgCache[cachedIndex].dataLen;
+    filePathData = fimgCache[cachedIndex].data;
+  }
+
   if (filePathData != nullptr) {
     TFTImp::DrawFIMG(x, y, filePathData, fileDataLen);
-    delete[] filePathData;
   }
 
   lua_pop(state, 3);
@@ -331,6 +368,12 @@ namespace LuaImp {
     lua_close(State);
     State = nullptr;
     CurrentGameDirName = nullptr;
+
+    for (int16_t i = 0; i < fimgCachedAmount; i++) {
+      delete[] fimgCache[i].name;
+      delete[] fimgCache[i].data;
+    }
+    fimgCachedAmount = 0;
   }
 
   void InitializeGame(const char * gameDirName) {
