@@ -97,7 +97,7 @@ namespace FileImp {
     return wrote;
   }
 
-  char * GetFileData(const char * filePath) {
+  char * GetFileData(const char * filePath, uint32_t * getLen) {
     if (!LittleFS.exists(filePath)) {
       Serial.println("File does not exist");
       return nullptr;
@@ -107,6 +107,10 @@ namespace FileImp {
     if (!file) {
       Serial.println("File cannot be opened");
       return nullptr;
+    }
+    
+    if (getLen != nullptr) {
+      *getLen = (uint32_t)(file.size() + 1);
     }
 
     char * fileData = new char[file.size() + 1];
@@ -120,6 +124,6 @@ namespace FileImp {
 
   char * GetGameMainData(const char * gameDirName) {
     String fullPath = "/games/" + String(gameDirName) + "/main.lua";
-    return GetFileData(fullPath.c_str());
+    return GetFileData(fullPath.c_str(), nullptr);
   }
 }

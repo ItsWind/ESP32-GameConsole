@@ -4,6 +4,7 @@
 #include "TFTImp.h"
 #include "NetImp.h"
 #include "LuaImp.h"
+#include "FoolFIMG.h"
 
 namespace MenuImp {
   Menu * CurrentMenu = nullptr;//new Menu();
@@ -49,6 +50,8 @@ namespace MenuImp {
     TFTImp::FrameSprite.fillSprite(TFT_BLUE);
     TFTImp::FrameSprite.setTextColor(TFT_WHITE);
     TFTImp::DrawCenteredText("Hello!");
+    
+    TFTImp::DrawFIMG(0, 0, TEST_FIMG, sizeof(TEST_FIMG));
   }
   
   void SetMenu(Menu * newMenu) {

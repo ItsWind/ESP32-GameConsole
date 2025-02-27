@@ -9,6 +9,6 @@ namespace FileImp {
   void RemoveFile(const char * filePath);
   void NukeDirectory(const char * dirName);
   bool AppendBytesToGameFile(const char * dirAndFileName, const uint8_t * bytes, uint length);
-  char * GetFileData(const char * filePath);
+  char * GetFileData(const char * filePath, uint32_t * getLen);
   char * GetGameMainData(const char * gameDirName);
 }

@@ -6,6 +6,80 @@
 #include "MenuImp.h"
 #include "FileImp.h"
 
+static uint8_t gamePhysObjIndexInactiveCount = 0;
+static uint8_t gamePhysObjIndexInactive[256];
+struct Vec2 {
+  int16_t x;
+  int16_t y;
+};
+struct GamePhysObj {
+  bool active;
+  Vec2 position;
+  Vec2 velocity;
+  int16_t w;
+  int16_t h;
+};
+static uint8_t gamePhysObjsCount = 0;
+static GamePhysObj gamePhysObjs[256];
+
+static int luaCreatePhysObj(lua_State * state) {
+  if (gamePhysObjsCount >= 255 || lua_gettop(state) < 5 || !lua_istable(state, 1)) {
+    lua_pop(state, lua_gettop(state));
+    lua_pushboolean(state, 0);
+    return 1;
+  }
+
+  uint8_t indexToStoreAt = gamePhysObjsCount;
+  if (gamePhysObjIndexInactiveCount > 0) {
+    indexToStoreAt = gamePhysObjIndexInactive[gamePhysObjIndexInactiveCount - 1];
+    gamePhysObjIndexInactiveCount--;
+  }
+  
+  int16_t x = (int16_t)lua_tonumber(state, 2);
+  int16_t y = (int16_t)lua_tonumber(state, 3);
+  int16_t w = (int16_t)lua_tonumber(state, 4);
+  int16_t h = (int16_t)lua_tonumber(state, 5);
+
+  gamePhysObjs[indexToStoreAt] = {true, {x, y}, {0, 0}, w, h};
+  gamePhysObjsCount++;
+  
+  lua_setfield(state, 1, "h");
+  lua_setfield(state, 1, "w");
+  lua_setfield(state, 1, "y");
+  lua_setfield(state, 1, "x");
+  lua_pushnumber(state, indexToStoreAt);
+  lua_setfield(state, 1, "index");
+  lua_pop(state, 1);
+
+  lua_pushboolean(state, 1);
+  return 1;
+}
+
+static int luaDeletePhysObj(lua_State * state) {
+  if (lua_gettop(state) < 1 || !lua_istable(state, 1)) {
+    lua_pop(state, lua_gettop(state));
+    lua_pushboolean(state, 0);
+    return 1;
+  }
+
+  lua_getfield(state, 1, "index");
+  uint8_t indexToDelete = (uint8_t)lua_tonumber(state, -1);
+  if (!gamePhysObjs[indexToDelete].active) {
+    lua_pop(state, lua_gettop(state));
+    lua_pushboolean(state, 0);
+    return 1;
+  }
+
+  gamePhysObjs[indexToDelete].active = false;
+  gamePhysObjIndexInactive[gamePhysObjIndexInactiveCount] = indexToDelete;
+  gamePhysObjIndexInactiveCount++;
+
+  lua_pop(state, 2);
+
+  lua_pushboolean(state, 1);
+  return 1;
+}
+
 static int luaCloseGame(lua_State * state) {
   LuaImp::CloseGame();
   MenuImp::SetMenu(new MenuImp::MainMenu());
@@ -99,7 +173,7 @@ static int luaRequire(lua_State * state) {
 
   // Check file system for file require
   String filePathForRequire = "/games/" + String(LuaImp::CurrentGameDirName) + "/" + String(reqStrName) + ".lua";
-  const char * fileData = FileImp::GetFileData(filePathForRequire.c_str());
+  const char * fileData = FileImp::GetFileData(filePathForRequire.c_str(), nullptr);
   if (fileData != nullptr) {
     String loadFileStr = "package.preload[\"" + String(reqStrName) + "\"] = function() " + String(fileData) + " end";
     luaL_dostring(state, loadFileStr.c_str());
@@ -210,6 +284,24 @@ static int luaTFTPrint(lua_State * state) {
   return 0;
 }
 
+static int luaDrawFIMG(lua_State * state) {
+  int32_t x = (int32_t)lua_tonumber(state, 1);
+  int32_t y = (int32_t)lua_tonumber(state, 2);
+  const char * filePath = lua_tostring(state, 3);
+
+  String fullPath = "/games/" + String(LuaImp::CurrentGameDirName) + "/" + String(filePath) + ".fimg";
+  uint32_t fileDataLen = 0;
+  const uint8_t * filePathData = (const uint8_t *)FileImp::GetFileData(fullPath.c_str(), &fileDataLen);
+  if (filePathData != nullptr) {
+    TFTImp::DrawFIMG(x, y, filePathData, fileDataLen);
+    delete[] filePathData;
+  }
+
+  lua_pop(state, 3);
+
+  return 0;
+}
+
 static int luaDrawBox(lua_State * state) {//(int32_t x, int32_t y, int32_t w, int32_t h, uint8_t r, uint8_t g, uint8_t b) {
   int32_t x = (int32_t)lua_tonumber(state, 1);
   int32_t y = (int32_t)lua_tonumber(state, 2);
@@ -251,6 +343,10 @@ namespace LuaImp {
       return;
     }
 
+    for (int16_t i = 0; i < 256; i++) {
+      gamePhysObjs[i] = {false, {0, 0}, {0, 0}, 0, 0};
+    }
+
     CurrentGameDirName = gameDirName;
     State = luaL_newstate();
 
@@ -279,11 +375,14 @@ namespace LuaImp {
     lua_register(State, "closeGame", luaCloseGame);
     lua_register(State, "print", luaPrint);
     lua_register(State, "require", luaRequire);
+    lua_register(State, "createPhysObj", luaCreatePhysObj);
+    lua_register(State, "deletePhysObj", luaDeletePhysObj);
     lua_register(State, "getInputVector", luaGetInputVector);
     lua_register(State, "getInputButtonPressed", luaGetInputButtonPressed);
     lua_register(State, "getInputButtonHeld", luaGetInputButtonHeld);
     lua_register(State, "getInputButtonReleased", luaGetInputButtonReleased);
     lua_register(State, "tftPrint", luaTFTPrint);
+    lua_register(State, "drawFIMG", luaDrawFIMG);
     lua_register(State, "drawBox", luaDrawBox);
 
     // Seed random

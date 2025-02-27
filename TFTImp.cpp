@@ -1,5 +1,60 @@
 #include "TFTImp.h"
 
+struct PaletteColor {
+  uint16_t rgb565;
+  uint8_t alpha;
+};
+
+static uint16_t blendRGB565(uint16_t fgColor, uint16_t bgColor, uint8_t alpha) {
+    // Extract RGB components from the foreground color (fgColor)
+    uint8_t fgR = (fgColor >> 11) & 0x1F; // Extract red (5 bits)
+    uint8_t fgG = (fgColor >> 5) & 0x3F;  // Extract green (6 bits)
+    uint8_t fgB = fgColor & 0x1F;         // Extract blue (5 bits)
+
+    // Extract RGB components from the background color (bgColor)
+    uint8_t bgR = (bgColor >> 11) & 0x1F; // Extract red (5 bits)
+    uint8_t bgG = (bgColor >> 5) & 0x3F;  // Extract green (6 bits)
+    uint8_t bgB = bgColor & 0x1F;         // Extract blue (5 bits)
+
+    // Normalize alpha value from 0-255 to 0.0-1.0
+    float alphaNorm = alpha / 255.0f;
+    
+    // Blend each color component
+    uint8_t outR = (uint8_t)((fgR * alphaNorm) + (bgR * (1.0f - alphaNorm)));
+    uint8_t outG = (uint8_t)((fgG * alphaNorm) + (bgG * (1.0f - alphaNorm)));
+    uint8_t outB = (uint8_t)((fgB * alphaNorm) + (bgB * (1.0f - alphaNorm)));
+
+    // Clamp the blended values to fit their respective bit widths (5 bits for R/B, 6 bits for G)
+    outR = outR > 31 ? 31 : outR;
+    outG = outG > 63 ? 63 : outG;
+    outB = outB > 31 ? 31 : outB;
+
+    // Reassemble the blended color back into RGB565 format
+    uint16_t blendedColor = (outR << 11) | (outG << 5) | outB;
+
+    return blendedColor;
+}
+
+/*static void doFIMGPixel(PaletteColor palColor, int32_t drawX, int32_t drawY, uint16_t imgWidth, uint16_t * imgWidthProcessed, uint16_t * imgWidthRow) {
+  if (palColor.alpha > 0) {
+    int32_t pixelX = (int32_t)*imgWidthProcessed + drawX;
+    int32_t pixelY = (int32_t)*imgWidthRow + drawY;
+    uint16_t colorToDraw = palColor.rgb565;
+    
+    if (palColor.alpha < 255) {
+      colorToDraw = blendRGB565(colorToDraw, TFTImp::FrameSprite.readPixel(pixelX, pixelY), palColor.alpha);
+    }
+
+    TFTImp::FrameSprite.drawPixel(pixelX, pixelY, colorToDraw);
+  }
+
+  *imgWidthProcessed++;
+  if (*imgWidthProcessed >= imgWidth) {
+    *imgWidthProcessed = 0;
+    *imgWidthRow++;
+  }
+}*/
+
 namespace TFTImp {
   TFT_eSPI Screen = TFT_eSPI();
   TFT_eSprite FrameSprite = TFT_eSprite(&Screen);
@@ -31,6 +86,79 @@ namespace TFTImp {
 
     FrameSprite.print(frameFPSBuf);
     FrameSprite.pushSprite(0, 0);
+  }
+
+  void DrawFIMG(int32_t drawX, int32_t drawY, const uint8_t * bytes, uint32_t len) {
+    uint16_t imgWidth = (bytes[0] << 8) | bytes[1];
+    uint16_t imgWidthProcessed = 0;
+    uint16_t imgWidthRow = 0;
+
+    PaletteColor palette[255];
+    uint8_t colorsInPalette = bytes[2];
+    uint8_t colorsInPaletteProcessed = 0;
+
+    // Loop through bytes
+    int currentIndex = 3;
+    while (currentIndex < len) {
+      // Process palettes to store
+      if (colorsInPaletteProcessed < colorsInPalette) {
+        palette[colorsInPaletteProcessed] = {(bytes[currentIndex] << 8) | bytes[currentIndex+1], bytes[currentIndex+2]};
+        colorsInPaletteProcessed++;
+        currentIndex += 3;
+      }
+      // Read pixels
+      else {
+        // 255 = condense code
+        if (bytes[currentIndex] == 255) {
+          for (uint8_t i = 0; i < bytes[currentIndex+2]; i++) {
+            // TO-DO: Condense this into function
+            if (palette[bytes[currentIndex+1]].alpha > 0) {
+              int32_t pixelX = (int32_t)imgWidthProcessed + drawX;
+              int32_t pixelY = (int32_t)imgWidthRow + drawY;
+              uint16_t colorToDraw = palette[bytes[currentIndex+1]].rgb565;
+              
+              if (palette[bytes[currentIndex+1]].alpha < 255) {
+                colorToDraw = blendRGB565(colorToDraw, FrameSprite.readPixel(pixelX, pixelY), palette[bytes[currentIndex+1]].alpha);
+              }
+
+              FrameSprite.drawPixel(pixelX, pixelY, colorToDraw);
+            }
+
+            imgWidthProcessed++;
+            if (imgWidthProcessed >= imgWidth) {
+              imgWidthProcessed = 0;
+              imgWidthRow++;
+            }
+            //doFIMGPixel(palette[bytes[currentIndex+1]], drawX, drawY, imgWidth, &imgWidthProcessed, &imgWidthRow);
+          }
+          currentIndex += 3;
+        }
+        // Not condensed, read palette index
+        else {
+          // TO-DO: Condense this into function
+          if (palette[bytes[currentIndex]].alpha > 0) {
+            int32_t pixelX = (int32_t)imgWidthProcessed + drawX;
+            int32_t pixelY = (int32_t)imgWidthRow + drawY;
+            uint16_t colorToDraw = palette[bytes[currentIndex]].rgb565;
+            
+            if (palette[bytes[currentIndex]].alpha < 255) {
+              colorToDraw = blendRGB565(colorToDraw, FrameSprite.readPixel(pixelX, pixelY), palette[bytes[currentIndex]].alpha);
+            }
+
+            FrameSprite.drawPixel(pixelX, pixelY, colorToDraw);
+          }
+
+          imgWidthProcessed++;
+          if (imgWidthProcessed >= imgWidth) {
+            imgWidthProcessed = 0;
+            imgWidthRow++;
+          }
+          
+          //doFIMGPixel(palette[bytes[currentIndex]], drawX, drawY, imgWidth, &imgWidthProcessed, &imgWidthRow);
+          currentIndex++;
+        }
+      }
+    }
   }
 
   void DrawBox(int32_t x, int32_t y, int32_t w, int32_t h, uint32_t color) {
