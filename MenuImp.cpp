@@ -7,13 +7,38 @@
 #include "FoolFIMG.h"
 
 namespace MenuImp {
-  Menu * CurrentMenu = nullptr;//new Menu();
+  Menu * CurrentMenu = nullptr;
 
   // BASE MENU
   void Menu::Init() {}
   void Menu::Destroy() {}
   void Menu::Update(unsigned long dt) {}
   void Menu::Draw() {}
+
+  // SPLASH MENU
+  void SplashMenu::Init() {
+    screenTime = 0;
+  }
+  void SplashMenu::Destroy() {}
+  void SplashMenu::Update(unsigned long dt) {
+    screenTime += dt;
+    if (screenTime >= 3000000) {
+      SetMenu(new MainMenu());
+    }
+  }
+  void SplashMenu::Draw() {
+    //int16_t alphaOffset = screenTime <= 2000000 ? (int16_t)lerp(-255.0, 0.0, (float)(screenTime / 2000000)) : screenTime >= 2800000 ? (int16_t)lerp(0.0, -255.0, (float)((screenTime - 2800000) / (200000))) : 0;
+    uint8_t alphaOffset = 0;
+    if (screenTime <= 1000000) {
+      float lerpVal = (float)screenTime / 1000000.0;
+      alphaOffset = (uint8_t)round(lerp(255.0, 0.0, lerpVal));
+    }
+    else if (screenTime >= 2000000) {
+      float lerpVal = (float)(screenTime - 2000000) / 1000000.0;
+      alphaOffset = (uint8_t)round(lerp(0.0, 255.0, lerpVal));
+    }
+    TFTImp::DrawFIMG(48, 32, alphaOffset, FOOL_FIMG, sizeof(FOOL_FIMG));
+  }
 
   // MESSAGE MENU
   MessageMenu::MessageMenu(const char * message) {
@@ -50,8 +75,6 @@ namespace MenuImp {
     TFTImp::FrameSprite.fillSprite(TFT_BLUE);
     TFTImp::FrameSprite.setTextColor(TFT_WHITE);
     TFTImp::DrawCenteredText("Hello!");
-    
-    TFTImp::DrawFIMG(0, 0, TEST_FIMG, sizeof(TEST_FIMG));
   }
   
   void SetMenu(Menu * newMenu) {

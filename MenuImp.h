@@ -11,6 +11,16 @@ namespace MenuImp {
       virtual void Draw();
   };
 
+  class SplashMenu : public Menu {
+    private:
+      unsigned long screenTime;
+    public:
+      void Init() override;
+      void Destroy() override;
+      void Update(unsigned long dt) override;
+      void Draw() override;
+  };
+
   class MessageMenu : public Menu {
     private:
       const char * messageToDisplay;

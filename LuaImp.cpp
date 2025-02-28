@@ -295,7 +295,8 @@ static int luaTFTPrint(lua_State * state) {
 static int luaDrawFIMG(lua_State * state) {
   int32_t x = (int32_t)lua_tonumber(state, 1);
   int32_t y = (int32_t)lua_tonumber(state, 2);
-  const char * filePath = lua_tostring(state, 3);
+  uint8_t alphaOffset = (uint8_t)lua_tonumber(state, 3);
+  const char * filePath = lua_tostring(state, 4);
 
   int16_t cachedIndex = -1;
   for (int16_t i = 0; i < fimgCachedAmount; i++) {
@@ -317,13 +318,15 @@ static int luaDrawFIMG(lua_State * state) {
     String fullPath = "/games/" + String(LuaImp::CurrentGameDirName) + "/" + String(filePath) + ".fimg";
     filePathData = (const uint8_t *)FileImp::GetFileData(fullPath.c_str(), &fileDataLen);
 
-    size_t filePathStrLen = strlen(filePath);
-    char * filePathCopy = new char[filePathStrLen+1];
-    strcpy(filePathCopy, filePath);
-    filePathCopy[filePathStrLen] = '\0';
+    if (filePathData != nullptr) {
+      size_t filePathStrLen = strlen(filePath);
+      char * filePathCopy = new char[filePathStrLen+1];
+      strcpy(filePathCopy, filePath);
+      filePathCopy[filePathStrLen] = '\0';
 
-    fimgCache[fimgCachedAmount] = {(const char *)filePathCopy, filePathData, fileDataLen};
-    fimgCachedAmount++;
+      fimgCache[fimgCachedAmount] = {(const char *)filePathCopy, filePathData, fileDataLen};
+      fimgCachedAmount++;
+    }
   }
   else {
     fileDataLen = fimgCache[cachedIndex].dataLen;
@@ -331,10 +334,10 @@ static int luaDrawFIMG(lua_State * state) {
   }
 
   if (filePathData != nullptr) {
-    TFTImp::DrawFIMG(x, y, filePathData, fileDataLen);
+    TFTImp::DrawFIMG(x, y, alphaOffset, filePathData, fileDataLen);
   }
 
-  lua_pop(state, 3);
+  lua_pop(state, 4);
 
   return 0;
 }

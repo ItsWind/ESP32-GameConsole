@@ -88,7 +88,7 @@ namespace TFTImp {
     FrameSprite.pushSprite(0, 0);
   }
 
-  void DrawFIMG(int32_t drawX, int32_t drawY, const uint8_t * bytes, uint32_t len) {
+  void DrawFIMG(int32_t drawX, int32_t drawY, uint8_t alphaOffset, const uint8_t * bytes, uint32_t len) {
     uint16_t imgWidth = (bytes[0] << 8) | bytes[1];
     uint16_t imgWidthProcessed = 0;
     uint16_t imgWidthRow = 0;
@@ -102,7 +102,10 @@ namespace TFTImp {
     while (currentIndex < len) {
       // Process palettes to store
       if (colorsInPaletteProcessed < colorsInPalette) {
-        palette[colorsInPaletteProcessed] = {(bytes[currentIndex] << 8) | bytes[currentIndex+1], bytes[currentIndex+2]};
+        int16_t alphaWithOffsetApplied = (int16_t)bytes[currentIndex+2] - (int16_t)alphaOffset;
+        alphaWithOffsetApplied = constrain(alphaWithOffsetApplied, 0, 255);//alphaWithOffsetApplied > 255 ? 255 : alphaWithOffsetApplied < 0 ? 0 : alphaWithOffsetApplied;
+
+        palette[colorsInPaletteProcessed] = {(bytes[currentIndex] << 8) | bytes[currentIndex+1], (uint8_t)alphaWithOffsetApplied};
         colorsInPaletteProcessed++;
         currentIndex += 3;
       }

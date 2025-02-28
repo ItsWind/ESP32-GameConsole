@@ -43,7 +43,8 @@ void setup() {
   FileImp::Init();
 
   TFTImp::Screen.println("Opening main menu");
-  MenuImp::SetMenu(new MenuImp::MainMenu());
+  //MenuImp::SetMenu(new MenuImp::MainMenu());
+  MenuImp::SetMenu(new MenuImp::SplashMenu());
 
   // SET LOOP TIME AT END OF setup
   oldTime = micros();
