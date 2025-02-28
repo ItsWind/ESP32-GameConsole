@@ -66,13 +66,10 @@ namespace TFTImp {
     Screen.setTextColor(TFT_WHITE);
     Screen.setTextWrap(false);
     Screen.setCursor(0, 0);
-
-    Screen.println("DISPLAY STARTED");
   }
 
   void PrepareNewFrameSprite() {
     FrameSprite.deleteSprite();
-    //FrameSprite = TFT_eSprite(&Screen);
     FrameSprite.createSprite(Screen.width(), Screen.height());
     FrameSprite.fillSprite(TFT_BLACK);
   }

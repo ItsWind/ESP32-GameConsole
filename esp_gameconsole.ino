@@ -31,20 +31,15 @@ unsigned long oldTime = 0;
 void setup() {
   initPins();
 
+  MenuImp::SetMenu(new MenuImp::SplashMenu());
+
   TFTImp::Init();
 
-  TFTImp::Screen.println("Establishing wifi connection");
   NetImp::Init();
 
-  TFTImp::Screen.println("Beginning serial");
   Serial.begin(115200);
 
-  TFTImp::Screen.println("Beginning file directory");
   FileImp::Init();
-
-  TFTImp::Screen.println("Opening main menu");
-  //MenuImp::SetMenu(new MenuImp::MainMenu());
-  MenuImp::SetMenu(new MenuImp::SplashMenu());
 
   // SET LOOP TIME AT END OF setup
   oldTime = micros();
