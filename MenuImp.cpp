@@ -37,7 +37,7 @@ namespace MenuImp {
       float lerpVal = (float)(screenTime - 2000000) / 1000000.0;
       alphaOffset = (uint8_t)round(lerp(0.0, 255.0, lerpVal));
     }
-    TFTImp::DrawFIMG(48, 32, alphaOffset, FOOL_FIMG, sizeof(FOOL_FIMG));
+    TFTImp::DrawFIMG(48, 32, false, alphaOffset, FOOL_FIMG, sizeof(FOOL_FIMG));
   }
 
   // MESSAGE MENU

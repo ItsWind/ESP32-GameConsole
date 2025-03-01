@@ -11,7 +11,7 @@ namespace TFTImp {
   void Init();
   void PrepareNewFrameSprite();
   void PushCurrentFrameSprite(unsigned long dt);
-  void DrawFIMG(int32_t drawX, int32_t drawY, uint8_t alphaOffset, const uint8_t * bytes, uint32_t len);
+  void DrawFIMG(int32_t drawX, int32_t drawY, bool flipImgY, uint8_t alphaOffset, const uint8_t * bytes, uint32_t len);
   void DrawBox(int32_t x, int32_t y, int32_t w, int32_t h, uint32_t color);
   void DrawHGradient(int16_t x, int16_t y, int16_t w, int16_t h, uint32_t color1, uint32_t color2);
   void DrawVGradient(int16_t x, int16_t y, int16_t w, int16_t h, uint32_t color1, uint32_t color2);

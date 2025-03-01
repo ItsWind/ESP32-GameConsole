@@ -293,10 +293,11 @@ static int luaTFTPrint(lua_State * state) {
 }
 
 static int luaDrawFIMG(lua_State * state) {
-  int32_t x = (int32_t)lua_tonumber(state, 1);
-  int32_t y = (int32_t)lua_tonumber(state, 2);
-  uint8_t alphaOffset = (uint8_t)lua_tonumber(state, 3);
-  const char * filePath = lua_tostring(state, 4);
+  const char * filePath = lua_tostring(state, 1);
+  int32_t x = (int32_t)lua_tonumber(state, 2);
+  int32_t y = (int32_t)lua_tonumber(state, 3);
+  bool flipImgY = (bool)lua_toboolean(state, 4);
+  uint8_t alphaOffset = (uint8_t)lua_tonumber(state, 5);
 
   int16_t cachedIndex = -1;
   for (int16_t i = 0; i < fimgCachedAmount; i++) {
@@ -334,10 +335,10 @@ static int luaDrawFIMG(lua_State * state) {
   }
 
   if (filePathData != nullptr) {
-    TFTImp::DrawFIMG(x, y, alphaOffset, filePathData, fileDataLen);
+    TFTImp::DrawFIMG(x, y, flipImgY, alphaOffset, filePathData, fileDataLen);
   }
 
-  lua_pop(state, 4);
+  lua_pop(state, 5);
 
   return 0;
 }
