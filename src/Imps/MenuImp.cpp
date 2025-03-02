@@ -1,10 +1,10 @@
-#include "MenuImp.h"
+#include "src/Imps/MenuImp.h"
 #include "Input.h"
-#include "FileImp.h"
-#include "TFTImp.h"
-#include "NetImp.h"
-#include "LuaImp.h"
-#include "FoolFIMG.h"
+#include "src/Imps/FileImp.h"
+#include "src/Imps/TFTImp.h"
+#include "src/Imps/NetImp.h"
+#include "src/Imps/LuaImp.h"
+#include "src/FIMG/FoolFIMG.h"
 
 namespace MenuImp {
   Menu * CurrentMenu = nullptr;

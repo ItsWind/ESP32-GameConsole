@@ -1,12 +1,12 @@
 #include <Arduino.h>
-#include "NetImp.h"
+#include "src/Imps/NetImp.h"
 #include "Util.h"
 #include "Constants.h"
 #include "Input.h"
-#include "TFTImp.h"
-#include "MenuImp.h"
-#include "FileImp.h"
-#include "LuaImp.h"
+#include "src/Imps/TFTImp.h"
+#include "src/Imps/MenuImp.h"
+#include "src/Imps/FileImp.h"
+#include "src/Imps/LuaImp.h"
 
 void initPins() {
   // Left (drive) stick

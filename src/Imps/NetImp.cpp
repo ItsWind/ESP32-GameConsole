@@ -1,7 +1,7 @@
-#include "NetImp.h"
+#include "src/Imps/NetImp.h"
 #include "secrets.h"
-#include "TFTImp.h"
-#include "FileImp.h"
+#include "src/Imps/TFTImp.h"
+#include "src/Imps/FileImp.h"
 
 static const char * WifiSsid = SECRET_WIFI_SSID;
 static const char * WifiPass = SECRET_WIFI_PASS;
