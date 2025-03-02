@@ -3,7 +3,6 @@
 #include "src/Imps/FileImp.h"
 
 #include "src/CLua/CLuaSys.h"
-#include "src/CLua/CLuaPhysics.h"
 #include "src/CLua/CLuaDraw.h"
 #include "src/CLua/CLuaInput.h"
 
@@ -59,7 +58,6 @@ namespace LuaImp {
     )"""");
 
     CLuaSys::Register(State);
-    CLuaPhysics::Register(State);
     CLuaInput::Register(State);
     CLuaDraw::Register(State);
 
