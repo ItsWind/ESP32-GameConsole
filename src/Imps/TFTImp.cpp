@@ -129,6 +129,7 @@ namespace TFTImp {
     FrameSprite.setTextSize(size);
     FrameSprite.setCursor(x - (FrameSprite.textWidth(text) / 2), y - (FrameSprite.fontHeight() / 2));
     FrameSprite.print(text);
+    FrameSprite.setTextSize(1);
   }
   void DrawCenteredText(int16_t x, int16_t y, const char * text) {
     DrawCenteredText(1, x, y, text);

@@ -62,12 +62,7 @@ namespace MenuImp {
   void MainMenu::Init() {}
   void MainMenu::Destroy() {}
   void MainMenu::Update(unsigned long dt) {
-    if (Input::Buttons[0].justPressed) {
-      LuaImp::InitializeGame("test");
-
-      SetMenu(nullptr);
-    }
-    else if (Input::Buttons[1].justPressed) {
+    if (Input::Buttons[1].justPressed) {
       NetImp::StartGameDownload(1);
     }
     else if (Input::Buttons[4].justPressed) {
@@ -83,10 +78,8 @@ namespace MenuImp {
   // TEXTLIST MENU
   void TextListMenu::Init() {
     currentTextIndex = 0;
-    //textListCount = 0;
 
     textList = (const char **)FileImp::GetSubDirectories("/games", &textListCount);
-    Serial.println(textListCount);
   }
   void TextListMenu::Destroy() {
     for (uint8_t i = 0; i < textListCount; i++) {
@@ -98,11 +91,55 @@ namespace MenuImp {
     if (Input::Buttons[4].justPressed) {
       SetMenu(new MainMenu());
     }
+    
+    if (textListCount == 0) {
+      return;
+    }
+
+    if (Input::Buttons[1].justPressed) {
+      if (currentTextIndex == 0) {
+        currentTextIndex = textListCount - 1;
+      }
+      else {
+        currentTextIndex--;
+      }
+    }
+    else if (Input::Buttons[3].justPressed) {
+      if (currentTextIndex == textListCount - 1) {
+        currentTextIndex = 0;
+      }
+      else {
+        currentTextIndex++;
+      }
+    }
+    else if (Input::Buttons[0].justPressed) {
+      LuaImp::InitializeGame(textList[currentTextIndex]);
+
+      SetMenu(nullptr);
+    }
   }
   void TextListMenu::Draw() {
     TFTImp::FrameSprite.fillSprite(TFT_BLUE);
-    TFTImp::FrameSprite.setTextColor(TFT_WHITE);
-    TFTImp::DrawCenteredText("TextList!");
+
+    if (textListCount > 0) {
+      for (uint8_t i = 0; i < textListCount; i++) {
+        int32_t spacer = 4;
+        int32_t h = 16;
+        int32_t w = TFTImp::Screen.width() - (spacer * 2);
+        int32_t y = spacer + ((h + spacer) * (int32_t)i);
+        
+        uint16_t colorForRect = i == currentTextIndex ? TFT_WHITE : 0x03ff;
+        TFTImp::FrameSprite.fillRect(spacer, y, w, h, colorForRect);
+        TFTImp::FrameSprite.setTextColor(TFT_BLACK);
+        TFTImp::DrawCenteredText(TFTImp::Screen.width() / 2, y + (h / 2), textList[i]);
+        TFTImp::FrameSprite.setTextColor(TFT_WHITE);
+      }
+    }
+    else {
+      TFTImp::DrawCenteredText("No games installed. :(");
+    }
+    
+    TFTImp::DrawCenteredText(24, TFTImp::Screen.height() - 6, "< Back");
   }
   
   void SetMenu(Menu * newMenu) {
