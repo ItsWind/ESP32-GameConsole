@@ -137,6 +137,7 @@ static void beginUDPMasterConnection() {
 
             if (indexOfSep != dirListStr.length() - 1) {
               dirListStr = dirListStr.substring(indexOfSep + 1);
+              indexOfSep = dirListStr.indexOf('/');
             }
             else {
               indexOfSep = -1;
