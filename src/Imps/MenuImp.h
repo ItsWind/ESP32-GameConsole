@@ -12,7 +12,7 @@ namespace MenuImp {
   };
 
   class SplashMenu : public Menu {
-    private:
+    protected:
       unsigned long screenTime;
     public:
       void Init() override;
@@ -22,7 +22,7 @@ namespace MenuImp {
   };
 
   class MessageMenu : public Menu {
-    private:
+    protected:
       const char * messageToDisplay;
     public:
       MessageMenu(const char * message);
@@ -41,7 +41,7 @@ namespace MenuImp {
   };
 
   class TextListMenu : public Menu {
-    private:
+    protected:
       uint8_t currentTextIndex;
       uint8_t textListCount;
       const char ** textList;
@@ -52,15 +52,24 @@ namespace MenuImp {
       void Draw() override;
   };
 
-  /*class GamesMenu : public TextListMenu {
+  class GamesMenu : public TextListMenu {
     public:
       void Init() override;
       void Destroy() override;
       void Update(unsigned long dt) override;
       void Draw() override;
-  };*/
+  };
+
+  class InstallMenu : public TextListMenu {
+    public:
+      void Init() override;
+      void Destroy() override;
+      void Update(unsigned long dt) override;
+      void Draw() override;
+      void DumpDownloadList(char ** downloadList, uint8_t count);
+  };
 
   void SetMenu(Menu * newMenu);
-  
+
   extern Menu * CurrentMenu;
 }

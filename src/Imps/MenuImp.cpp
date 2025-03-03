@@ -63,10 +63,10 @@ namespace MenuImp {
   void MainMenu::Destroy() {}
   void MainMenu::Update(unsigned long dt) {
     if (Input::Buttons[1].justPressed) {
-      NetImp::StartGameDownload(1);
+      SetMenu(new InstallMenu());
     }
-    else if (Input::Buttons[4].justPressed) {
-      SetMenu(new TextListMenu());
+    else if (Input::Buttons[3].justPressed) {
+      SetMenu(new GamesMenu());
     }
   }
   void MainMenu::Draw() {
@@ -78,8 +78,6 @@ namespace MenuImp {
   // TEXTLIST MENU
   void TextListMenu::Init() {
     currentTextIndex = 0;
-
-    textList = (const char **)FileImp::GetSubDirectories("/games", &textListCount);
   }
   void TextListMenu::Destroy() {
     for (uint8_t i = 0; i < textListCount; i++) {
@@ -112,11 +110,6 @@ namespace MenuImp {
         currentTextIndex++;
       }
     }
-    else if (Input::Buttons[0].justPressed) {
-      LuaImp::InitializeGame(textList[currentTextIndex]);
-
-      SetMenu(nullptr);
-    }
   }
   void TextListMenu::Draw() {
     TFTImp::FrameSprite.fillSprite(TFT_BLUE);
@@ -136,10 +129,56 @@ namespace MenuImp {
       }
     }
     else {
-      TFTImp::DrawCenteredText("No games installed. :(");
+      TFTImp::DrawCenteredText("...");
     }
     
     TFTImp::DrawCenteredText(24, TFTImp::Screen.height() - 6, "< Back");
+  }
+
+  // GAMES MENU
+  void GamesMenu::Init() {
+    TextListMenu::Init();
+
+    textList = (const char **)FileImp::GetSubDirectories("/games", &textListCount);
+  }
+  void GamesMenu::Destroy() {
+    TextListMenu::Destroy();
+  }
+  void GamesMenu::Update(unsigned long dt) {
+    TextListMenu::Update(dt);
+
+    if (textListCount != 0 && Input::Buttons[0].justPressed) {
+      LuaImp::InitializeGame(textList[currentTextIndex]);
+
+      SetMenu(nullptr);
+    }
+  }
+  void GamesMenu::Draw() {
+    TextListMenu::Draw();
+  }
+
+  // INSTALL MENU
+  void InstallMenu::Init() {
+    TextListMenu::Init();
+
+    NetImp::GetGameDownloadList(this);
+  }
+  void InstallMenu::Destroy() {
+    TextListMenu::Destroy();
+  }
+  void InstallMenu::Update(unsigned long dt) {
+    TextListMenu::Update(dt);
+    
+    if (textListCount != 0 && Input::Buttons[0].justPressed) {
+      NetImp::StartGameDownload(currentTextIndex+1);
+    }
+  }
+  void InstallMenu::Draw() {
+    TextListMenu::Draw();
+  }
+  void InstallMenu::DumpDownloadList(char ** downloadList, uint8_t count) {
+    textList = (const char **)downloadList;
+    textListCount = count;
   }
   
   void SetMenu(Menu * newMenu) {

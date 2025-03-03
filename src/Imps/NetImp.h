@@ -11,6 +11,7 @@ namespace NetImp {
   void Init();
   void Update(unsigned long dt);
   void Draw();
+  void GetGameDownloadList(void * menu);
   void StartGameDownload(uint8_t index);
   float GetGameDownloadPercentageDone();
 }

@@ -1,5 +1,6 @@
 #include "src/Imps/NetImp.h"
 #include "secrets.h"
+#include "src/Imps/MenuImp.h"
 #include "src/Imps/TFTImp.h"
 #include "src/Imps/FileImp.h"
 
@@ -15,6 +16,8 @@ static uint16_t doneFileCount = 0;
 
 static uint32_t currentByteCount = 0;
 static uint32_t doneByteCount = 0;
+
+static MenuImp::InstallMenu * installMenuDump = nullptr;
 
 static void beginUDPMasterConnection() {
   if (NetImp::UDP.connect(IPAddress(54,39,21,229), 33733)) {
@@ -107,6 +110,42 @@ static void beginUDPMasterConnection() {
           }
           return;
         }
+        case 255:
+        {
+          if (installMenuDump == nullptr) {
+            return;
+          }
+
+          uint8_t gameDownloadListCount = 0;
+          char ** gameDownloadList = new char *[256];
+
+          char dirList[packet.length()];
+          memcpy(dirList, &bytes[1], packet.length() - 1);
+          dirList[packet.length() - 1] = '\0';
+
+          String dirListStr = String(dirList);
+
+          int indexOfSep = dirListStr.indexOf('/');
+          while (indexOfSep != -1) {
+            String thisDirName = dirListStr.substring(0, indexOfSep);
+            char * dirNameForList = new char[thisDirName.length() + 1];
+            memcpy(dirNameForList, thisDirName.c_str(), thisDirName.length());
+            dirNameForList[thisDirName.length()] = '\0';
+
+            gameDownloadList[gameDownloadListCount] = dirNameForList;
+            gameDownloadListCount++;
+
+            if (indexOfSep != dirListStr.length() - 1) {
+              dirListStr = dirListStr.substring(indexOfSep + 1);
+            }
+            else {
+              indexOfSep = -1;
+            }
+          }
+          
+          installMenuDump->DumpDownloadList(gameDownloadList, gameDownloadListCount);
+          installMenuDump = nullptr;
+        }
       }
     });
   }
@@ -169,6 +208,13 @@ namespace NetImp {
     TFTImp::DrawCenteredText(screenWidthHalf, screenHeightHalf + 24, fileBytesOutOfBytesStr.c_str());
     TFTImp::FrameSprite.fillRect(30, 100, 100, 10, TFT_RED);
     TFTImp::FrameSprite.fillRect(30, 100, (int32_t)(GetGameDownloadPercentageDone() * 100.0), 10, TFT_GREEN);
+  }
+
+  void GetGameDownloadList(void * menu) {
+    installMenuDump = (MenuImp::InstallMenu *)menu;
+
+    uint8_t bytes[] = {255};
+    UDP.write(bytes, 1);
   }
 
   void StartGameDownload(uint8_t index) {
