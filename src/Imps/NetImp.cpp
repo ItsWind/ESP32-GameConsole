@@ -167,8 +167,8 @@ namespace NetImp {
     TFTImp::DrawCenteredText(screenWidthHalf, screenHeightHalf + 12, fileDirNameDownloading);
     String fileBytesOutOfBytesStr = "( " + String(doneByteCount) + " / " + String(currentByteCount) + " )";
     TFTImp::DrawCenteredText(screenWidthHalf, screenHeightHalf + 24, fileBytesOutOfBytesStr.c_str());
-    TFTImp::DrawBox(30, 100, 100, 10, TFT_RED);
-    TFTImp::DrawBox(30, 100, (int32_t)(GetGameDownloadPercentageDone() * 100.0), 10, TFT_GREEN);
+    TFTImp::FrameSprite.fillRect(30, 100, 100, 10, TFT_RED);
+    TFTImp::FrameSprite.fillRect(30, 100, (int32_t)(GetGameDownloadPercentageDone() * 100.0), 10, TFT_GREEN);
   }
 
   void StartGameDownload(uint8_t index) {

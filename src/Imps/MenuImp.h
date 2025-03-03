@@ -40,7 +40,27 @@ namespace MenuImp {
       void Draw() override;
   };
 
-  void SetMenu(Menu * newMenu);
+  class TextListMenu : public Menu {
+    private:
+      uint8_t currentTextIndex;
+      uint8_t textListCount;
+      const char ** textList;
+    public:
+      void Init() override;
+      void Destroy() override;
+      void Update(unsigned long dt) override;
+      void Draw() override;
+  };
 
+  /*class GamesMenu : public TextListMenu {
+    public:
+      void Init() override;
+      void Destroy() override;
+      void Update(unsigned long dt) override;
+      void Draw() override;
+  };*/
+
+  void SetMenu(Menu * newMenu);
+  
   extern Menu * CurrentMenu;
 }

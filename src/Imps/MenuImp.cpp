@@ -70,11 +70,39 @@ namespace MenuImp {
     else if (Input::Buttons[1].justPressed) {
       NetImp::StartGameDownload(1);
     }
+    else if (Input::Buttons[4].justPressed) {
+      SetMenu(new TextListMenu());
+    }
   }
   void MainMenu::Draw() {
     TFTImp::FrameSprite.fillSprite(TFT_BLUE);
     TFTImp::FrameSprite.setTextColor(TFT_WHITE);
     TFTImp::DrawCenteredText("Hello!");
+  }
+
+  // TEXTLIST MENU
+  void TextListMenu::Init() {
+    currentTextIndex = 0;
+    //textListCount = 0;
+
+    textList = (const char **)FileImp::GetSubDirectories("/games", &textListCount);
+    Serial.println(textListCount);
+  }
+  void TextListMenu::Destroy() {
+    for (uint8_t i = 0; i < textListCount; i++) {
+      delete[] textList[i];
+    }
+    delete[] textList;
+  }
+  void TextListMenu::Update(unsigned long dt) {
+    if (Input::Buttons[4].justPressed) {
+      SetMenu(new MainMenu());
+    }
+  }
+  void TextListMenu::Draw() {
+    TFTImp::FrameSprite.fillSprite(TFT_BLUE);
+    TFTImp::FrameSprite.setTextColor(TFT_WHITE);
+    TFTImp::DrawCenteredText("TextList!");
   }
   
   void SetMenu(Menu * newMenu) {

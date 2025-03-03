@@ -44,6 +44,45 @@ namespace FileImp {
     }
   }
 
+  char ** GetSubDirectories(const char * dirName, uint8_t * count) {
+    File root = LittleFS.open(dirName);
+    if (!root) {
+      Serial.println("Directory to scan not found");
+      return nullptr;
+    }
+    if (!root.isDirectory()) {
+      Serial.println("Directory to scan is not directory");
+      return nullptr;
+    }
+
+    uint8_t indexCount = 0;
+    char ** subDirectories = new char *[256];
+
+    File file = root.openNextFile();
+    while (file) {
+      bool isDirectory = file.isDirectory();
+      String filePath = String(file.path());
+      file.close();
+      if (isDirectory) {
+        String removeFromPath = String(dirName) + "/";
+        filePath.replace(removeFromPath, "");
+        Serial.println(filePath);
+        char * directoryPath = new char[filePath.length() + 1];
+        strcpy(directoryPath, filePath.c_str());
+        directoryPath[filePath.length()] = '\0';
+        subDirectories[indexCount] = directoryPath;
+        indexCount++;
+      }
+      file = root.openNextFile();
+    }
+
+    if (count != nullptr) {
+      *count = indexCount;
+    }
+
+    return subDirectories;
+  }
+
   void NukeDirectory(const char * dirName) {
     File root = LittleFS.open(dirName);
     if (!root) {

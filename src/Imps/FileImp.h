@@ -7,6 +7,7 @@ namespace FileImp {
   void CreateDirectory(const char * dirName);
   void RemoveDirectory(const char * dirName);
   void RemoveFile(const char * filePath);
+  char ** GetSubDirectories(const char * dirName, uint8_t * count);
   void NukeDirectory(const char * dirName);
   bool AppendBytesToGameFile(const char * dirAndFileName, const uint8_t * bytes, uint length);
   char * GetFileData(const char * filePath, uint32_t * getLen);
