@@ -61,6 +61,8 @@ namespace MenuImp {
   };
 
   class InstallMenu : public TextListMenu {
+    private:
+      unsigned long resendGetListTimer;
     public:
       void Init() override;
       void Destroy() override;

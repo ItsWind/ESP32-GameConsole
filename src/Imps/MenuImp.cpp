@@ -161,6 +161,8 @@ namespace MenuImp {
   void InstallMenu::Init() {
     TextListMenu::Init();
 
+    resendGetListTimer = 0;
+    textList = nullptr;
     NetImp::GetGameDownloadList(this);
   }
   void InstallMenu::Destroy() {
@@ -168,6 +170,15 @@ namespace MenuImp {
   }
   void InstallMenu::Update(unsigned long dt) {
     TextListMenu::Update(dt);
+
+    // Resend packet if textList never assigned to
+    if (textList == nullptr) {
+      resendGetListTimer += dt;
+      if (resendGetListTimer >= 1000000 && textList == nullptr) {
+        resendGetListTimer = 0;
+        NetImp::GetGameDownloadList(this);
+      }
+    }
     
     if (textListCount != 0 && Input::Buttons[0].justPressed) {
       NetImp::StartGameDownload(currentTextIndex+1);
@@ -177,6 +188,15 @@ namespace MenuImp {
     TextListMenu::Draw();
   }
   void InstallMenu::DumpDownloadList(char ** downloadList, uint8_t count) {
+    // If textList is already populated
+    if (textList != nullptr) {
+      for (uint8_t i = 0; i < count; i++) {
+        delete[] downloadList[i];
+      }
+      delete[] downloadList;
+      return;
+    }
+
     textList = (const char **)downloadList;
     textListCount = count;
   }
