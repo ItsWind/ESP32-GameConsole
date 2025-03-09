@@ -40,6 +40,18 @@ namespace MenuImp {
       void Draw() override;
   };
 
+  class SerialUploadMenu : public Menu {
+    private:
+      int16_t incomingPacketByteCount;
+      uint8_t incomingPacketIndex;
+      uint8_t * incomingPacket;
+    public:
+      void Init() override;
+      void Destroy() override;
+      void Update(unsigned long dt) override;
+      void Draw() override;
+  };
+
   class TextListMenu : public Menu {
     protected:
       uint8_t currentTextIndex;

@@ -12,6 +12,8 @@ namespace NetImp {
   void Update(unsigned long dt);
   void Draw();
   void GetGameDownloadList(void * menu);
+  void CancelGameDownloadList();
   void StartGameDownload(uint8_t index);
   float GetGameDownloadPercentageDone();
+  void ProcessPacket(const uint8_t * bytes, size_t len, bool fromSerial);
 }

@@ -24,130 +24,7 @@ static void beginUDPMasterConnection() {
     NetImp::UDP.onPacket([](AsyncUDPPacket packet) {
       // Receive packet
       const uint8_t * bytes = packet.data();
-      switch (bytes[0]) {
-        // 0 = getting game directory for clearing, prefixes {0, highFileCountByte, lowFileCountByte}
-        case 0:
-        {
-          currentFileCount = (bytes[1] << 8) | bytes[2];
-          doneFileCount = 0;
-          Serial.println(currentFileCount);
-
-          char gameDirectoryName[packet.length() - 2];
-          memcpy(&gameDirectoryName, &bytes[3], packet.length() - 3);
-          gameDirectoryName[packet.length() - 3] = '\0';
-
-          String fullPath = "/games/" + String(gameDirectoryName);
-          Serial.println(fullPath.c_str());
-          FileImp::NukeDirectory(fullPath.c_str());
-
-          uint8_t bytesBackClearedDir[] = {2};
-          NetImp::UDP.write(bytesBackClearedDir, 1);
-          return;
-        }
-        // 1 = getting dir/file.extension, prefixes {1, b1, b2, b3, b4}
-        case 1:
-        {
-          currentByteCount = (bytes[1] << 24) | (bytes[2] << 16) | (bytes[3] << 8) | bytes[4];
-          doneByteCount = 0;
-          Serial.println(currentByteCount);
-
-          downloadingFilePulse = 0;
-
-          if (fileDirNameDownloading != nullptr) {
-            delete[] fileDirNameDownloading;
-          }
-
-          fileDirNameDownloading = new char[packet.length() - 4];
-          memcpy(fileDirNameDownloading, &bytes[5], packet.length() - 5);
-          fileDirNameDownloading[packet.length() - 5] = '\0';
-          currentChunkNum = 0;
-
-          Serial.print("Setting current downloading file to ");
-          Serial.println(fileDirNameDownloading);
-          uint8_t bytesBackFileName[] = {3};
-          NetImp::UDP.write(bytesBackFileName, 1);
-          return;
-        }
-        // 2 = getting chunk of above dirFilePath, prefixes {2, chunkNumByte1, chunkNumByte2}
-        case 2:
-        {
-          if (fileDirNameDownloading == nullptr) {
-            return;
-          }
-          downloadingFilePulse = 0;
-          
-          uint16_t chunkNum = (bytes[1] << 8) | bytes[2];
-          Serial.println(bytes[1]);
-          Serial.println(bytes[2]);
-          Serial.println(chunkNum);
-
-          if (chunkNum < currentChunkNum) {
-            Serial.println("Caught resend current chunk num error");
-            uint8_t bytesBackChunk[] = {4, bytes[1], bytes[2]};
-            NetImp::UDP.write(bytesBackChunk, 3);
-            return;
-          }
-          else if (chunkNum > currentChunkNum) {
-            Serial.println("FATAL DOWNLOAD ERROR. CHUNK NUM GREATER THAN CURRENT. THIS SHOULD NOT HAPPEN AT ALL.");
-            return;
-          }
-          currentChunkNum++;
-          
-          size_t packetByteCount = packet.length() - 3;
-          doneByteCount += packetByteCount;
-          if (doneByteCount >= currentByteCount) {
-            doneFileCount++;
-            Serial.print("DONE FILE COUNT: ");
-            Serial.println(doneFileCount);
-            Serial.println(NetImp::GetGameDownloadPercentageDone());
-          }
-
-          if (FileImp::AppendBytesToGameFile(fileDirNameDownloading, &bytes[3], packetByteCount)) {
-            Serial.print("Appended bytes to ");
-            Serial.println(fileDirNameDownloading);
-            uint8_t bytesBackChunk[] = {4, bytes[1], bytes[2]};
-            NetImp::UDP.write(bytesBackChunk, 3);
-          }
-          return;
-        }
-        case 255:
-        {
-          if (installMenuDump == nullptr) {
-            return;
-          }
-
-          uint8_t gameDownloadListCount = 0;
-          char ** gameDownloadList = new char *[256];
-
-          char dirList[packet.length()];
-          memcpy(dirList, &bytes[1], packet.length() - 1);
-          dirList[packet.length() - 1] = '\0';
-
-          String dirListStr = String(dirList);
-
-          int indexOfSep = dirListStr.indexOf('/');
-          while (indexOfSep != -1) {
-            String thisDirName = dirListStr.substring(0, indexOfSep);
-            char * dirNameForList = new char[thisDirName.length() + 1];
-            memcpy(dirNameForList, thisDirName.c_str(), thisDirName.length());
-            dirNameForList[thisDirName.length()] = '\0';
-
-            gameDownloadList[gameDownloadListCount] = dirNameForList;
-            gameDownloadListCount++;
-
-            if (indexOfSep != dirListStr.length() - 1) {
-              dirListStr = dirListStr.substring(indexOfSep + 1);
-              indexOfSep = dirListStr.indexOf('/');
-            }
-            else {
-              indexOfSep = -1;
-            }
-          }
-          
-          installMenuDump->DumpDownloadList(gameDownloadList, gameDownloadListCount);
-          installMenuDump = nullptr;
-        }
-      }
+      NetImp::ProcessPacket(bytes, packet.length(), false);
     });
   }
 }
@@ -218,6 +95,10 @@ namespace NetImp {
     UDP.write(bytes, 1);
   }
 
+  void CancelGameDownloadList() {
+    installMenuDump = nullptr;
+  }
+
   void StartGameDownload(uint8_t index) {
     uint8_t bytes[] = {1, index};
     UDP.write(bytes, 2);
@@ -240,5 +121,163 @@ namespace NetImp {
     }
 
     return currentMinPercent + addToMin;
+  }
+
+  void ProcessPacket(const uint8_t * bytes, size_t len, bool fromSerial) {
+    switch (bytes[0]) {
+      // 0 = getting game directory for clearing, prefixes {0, highFileCountByte, lowFileCountByte}
+      case 0:
+      {
+        currentFileCount = (bytes[1] << 8) | bytes[2];
+        doneFileCount = 0;
+        Serial.println(currentFileCount);
+
+        char gameDirectoryName[len - 2];
+        memcpy(&gameDirectoryName, &bytes[3], len - 3);
+        gameDirectoryName[len - 3] = '\0';
+
+        String fullPath = "/games/" + String(gameDirectoryName);
+        Serial.println(fullPath.c_str());
+        FileImp::NukeDirectory(fullPath.c_str());
+
+        uint8_t bytesBackClearedDir[] = {2};
+        if (fromSerial) {
+          // Send bytes through serial
+        }
+        else {
+          NetImp::UDP.write(bytesBackClearedDir, 1);
+        }
+        return;
+      }
+      // 1 = getting dir/file.extension, prefixes {1, b1, b2, b3, b4}
+      case 1:
+      {
+        currentByteCount = (bytes[1] << 24) | (bytes[2] << 16) | (bytes[3] << 8) | bytes[4];
+        doneByteCount = 0;
+        Serial.println(currentByteCount);
+
+        downloadingFilePulse = 0;
+
+        if (fileDirNameDownloading != nullptr) {
+          delete[] fileDirNameDownloading;
+        }
+
+        fileDirNameDownloading = new char[len - 4];
+        memcpy(fileDirNameDownloading, &bytes[5], len - 5);
+        fileDirNameDownloading[len - 5] = '\0';
+        currentChunkNum = 0;
+
+        Serial.print("Setting current downloading file to ");
+        Serial.println(fileDirNameDownloading);
+
+        uint8_t bytesBackFileName[] = {3};
+        if (fromSerial) {
+          // Send bytes through serial
+        }
+        else {
+          NetImp::UDP.write(bytesBackFileName, 1);
+        }
+        return;
+      }
+      // 2 = getting chunk of above dirFilePath, prefixes {2, chunkNumByte1, chunkNumByte2}
+      case 2:
+      {
+        if (fileDirNameDownloading == nullptr) {
+          return;
+        }
+        downloadingFilePulse = 0;
+        
+        uint16_t chunkNum = (bytes[1] << 8) | bytes[2];
+        Serial.println(bytes[1]);
+        Serial.println(bytes[2]);
+        Serial.println(chunkNum);
+
+        if (chunkNum < currentChunkNum) {
+          Serial.println("Caught resend current chunk num error");
+          uint8_t bytesBackChunk[] = {4, bytes[1], bytes[2]};
+          if (fromSerial) {
+            // Send bytes through serial
+          }
+          else {
+            NetImp::UDP.write(bytesBackChunk, 3);
+          }
+          return;
+        }
+        else if (chunkNum > currentChunkNum) {
+          Serial.println("FATAL DOWNLOAD ERROR. CHUNK NUM GREATER THAN CURRENT. THIS SHOULD NOT HAPPEN AT ALL.");
+          return;
+        }
+        currentChunkNum++;
+        
+        size_t packetByteCount = len - 3;
+        doneByteCount += packetByteCount;
+        if (doneByteCount >= currentByteCount) {
+          doneFileCount++;
+          Serial.print("DONE FILE COUNT: ");
+          Serial.println(doneFileCount);
+          Serial.println(NetImp::GetGameDownloadPercentageDone());
+        }
+
+        if (FileImp::AppendBytesToGameFile(fileDirNameDownloading, &bytes[3], packetByteCount)) {
+          Serial.print("Appended bytes to ");
+          Serial.println(fileDirNameDownloading);
+
+          uint8_t bytesBackChunk[] = {4, bytes[1], bytes[2]};
+          if (fromSerial) {
+            // Send bytes through serial
+          }
+          else {
+            NetImp::UDP.write(bytesBackChunk, 3);
+          }
+        }
+        return;
+      }
+      case 255:
+      {
+        if (installMenuDump == nullptr) {
+          return;
+        }
+
+        uint8_t gameDownloadListCount = 0;
+        char ** gameDownloadList = new char *[256];
+
+        char dirList[len];
+        memcpy(dirList, &bytes[1], len - 1);
+        dirList[len - 1] = '\0';
+
+        String dirListStr = String(dirList);
+
+        int indexOfSep = dirListStr.indexOf('/');
+        while (indexOfSep != -1) {
+          String thisDirName = dirListStr.substring(0, indexOfSep);
+          char * dirNameForList = new char[thisDirName.length() + 1];
+          memcpy(dirNameForList, thisDirName.c_str(), thisDirName.length());
+          dirNameForList[thisDirName.length()] = '\0';
+
+          gameDownloadList[gameDownloadListCount] = dirNameForList;
+          gameDownloadListCount++;
+
+          if (indexOfSep != dirListStr.length() - 1) {
+            dirListStr = dirListStr.substring(indexOfSep + 1);
+            indexOfSep = dirListStr.indexOf('/');
+          }
+          else {
+            indexOfSep = -1;
+          }
+        }
+        
+        // Check if install menu is still valid
+        if (installMenuDump != nullptr) {
+          installMenuDump->DumpDownloadList(gameDownloadList, gameDownloadListCount);
+          installMenuDump = nullptr;
+        }
+        else {
+          for (uint8_t i = 0; i < gameDownloadListCount; i++) {
+            delete[] gameDownloadList[i];
+          }
+          delete[] gameDownloadList;
+        }
+      }
+    }
   }
 }

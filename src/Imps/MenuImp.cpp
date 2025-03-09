@@ -70,9 +70,75 @@ namespace MenuImp {
     }
   }
   void MainMenu::Draw() {
+    int16_t halfWidth = TFTImp::Screen.width() / 2;
+    int16_t halfHeight = TFTImp::Screen.height() / 2;
+
     TFTImp::FrameSprite.fillSprite(TFT_BLUE);
     TFTImp::FrameSprite.setTextColor(TFT_WHITE);
-    TFTImp::DrawCenteredText("Hello!");
+    TFTImp::DrawCenteredText(halfWidth, halfHeight - 16, "^");
+    TFTImp::DrawCenteredText(halfWidth, halfHeight - 24, "Install");
+    TFTImp::DrawCenteredText(halfWidth, halfHeight + 16, "v");
+    TFTImp::DrawCenteredText(halfWidth, halfHeight + 24, "Play");
+  }
+
+  // SERIAL UPLOAD MENU
+  void SerialUploadMenu::Init() {
+    incomingPacketByteCount = -1;
+    incomingPacketIndex = 0;
+    incomingPacket = nullptr;
+  }
+  void SerialUploadMenu::Destroy() {
+    if (incomingPacket != nullptr) {
+      delete[] incomingPacket;
+    }
+  }
+  void SerialUploadMenu::Update(unsigned long dt) {
+    if (!NetImp::DownloadingGame && Input::Buttons[4].justPressed) {
+      SetMenu(new InstallMenu());
+      return;
+    }
+
+    if (Serial.available() <= 0) {
+      return;
+    }
+
+    if (incomingPacketByteCount < 0) {
+      incomingPacketByteCount = (int16_t)Serial.read();
+      Serial.println("Incoming packet count received");
+    }
+    else {
+      if (incomingPacket == nullptr) {
+        Serial.println("Incoming packet created");
+        incomingPacket = new uint8_t[incomingPacketByteCount];
+      }
+      
+      incomingPacket[incomingPacketIndex] = Serial.read();
+      Serial.println("bong");
+      
+      if ((int16_t)incomingPacketIndex >= incomingPacketByteCount - 1) {
+        NetImp::ProcessPacket((const uint8_t *)incomingPacket, (size_t)incomingPacketByteCount, true);
+        Serial.println("nyoomed");
+
+        delete[] incomingPacket;
+        incomingPacketByteCount = -1;
+        incomingPacketIndex = 0;
+        incomingPacket = nullptr;
+      }
+      else {
+        incomingPacketIndex++;
+      }
+    }
+  }
+  void SerialUploadMenu::Draw() {
+    TFTImp::DrawCenteredText("Serial");
+    TFTImp::DrawCenteredText(24, TFTImp::Screen.height() - 6, "< Back");
+
+    /*int16_t halfWidth = TFTImp::Screen.width() / 2;
+    int16_t halfHeight = TFTImp::Screen.height() / 2;
+
+    TFTImp::FrameSprite.fillSprite(TFT_BLUE);
+    TFTImp::FrameSprite.setTextColor(TFT_WHITE);
+    TFTImp::DrawCenteredText(halfWidth, halfHeight - 16, "▲");*/
   }
 
   // TEXTLIST MENU
@@ -88,6 +154,7 @@ namespace MenuImp {
   void TextListMenu::Update(unsigned long dt) {
     if (Input::Buttons[4].justPressed) {
       SetMenu(new MainMenu());
+      return;
     }
     
     if (textListCount == 0) {
@@ -167,9 +234,18 @@ namespace MenuImp {
   }
   void InstallMenu::Destroy() {
     TextListMenu::Destroy();
+    NetImp::CancelGameDownloadList();
   }
   void InstallMenu::Update(unsigned long dt) {
+    if (NetImp::DownloadingGame) {
+      return;
+    }
     TextListMenu::Update(dt);
+
+    if (Input::Buttons[2].justPressed) {
+      SetMenu(new SerialUploadMenu());
+      return;
+    }
 
     // Resend packet if textList never assigned to
     if (textList == nullptr) {
@@ -186,6 +262,8 @@ namespace MenuImp {
   }
   void InstallMenu::Draw() {
     TextListMenu::Draw();
+
+    TFTImp::DrawCenteredText(TFTImp::Screen.width() - 24, TFTImp::Screen.height() - 6, "Serial >");
   }
   void InstallMenu::DumpDownloadList(char ** downloadList, uint8_t count) {
     // If textList is already populated
