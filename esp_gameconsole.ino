@@ -6,16 +6,13 @@
 #include "src/Imps/NetImp.h"
 #include "src/Imps/TFTImp.h"
 #include "src/Imps/FileImp.h"
+#include "src/Imps/SoundImp.h"
 #include "src/Imps/LuaImp.h"
 
 void initPins() {
-  // Left (drive) stick
-  pinMode(JOYSTICK_LEFT_BUTTON_PIN, INPUT_PULLUP);
   pinMode(JOYSTICK_LEFT_X_PIN, INPUT);
   pinMode(JOYSTICK_LEFT_Y_PIN, INPUT);
 
-  // Right (turn) stick
-  pinMode(JOYSTICK_RIGHT_BUTTON_PIN, INPUT_PULLUP);
   pinMode(JOYSTICK_RIGHT_X_PIN, INPUT);
   pinMode(JOYSTICK_RIGHT_Y_PIN, INPUT);
 
@@ -24,6 +21,13 @@ void initPins() {
   pinMode(DPAD_RIGHT_PIN, INPUT_PULLUP);
   pinMode(DPAD_DOWN_PIN, INPUT_PULLUP);
   pinMode(DPAD_LEFT_PIN, INPUT_PULLUP);
+  pinMode(JOYSTICK_LEFT_BUTTON_PIN, INPUT_PULLUP);
+  pinMode(JOYSTICK_RIGHT_BUTTON_PIN, INPUT_PULLUP);
+  pinMode(LEFT_BUMPER_BUTTON_PIN, INPUT_PULLUP);
+  pinMode(RIGHT_BUMPER_BUTTON_PIN, INPUT_PULLUP);
+
+  pinMode(SCREEN_DIM_PIN, OUTPUT);
+  pinMode(VIBRATION_PIN, OUTPUT);
 }
 
 // Time variables for loop (SET AT END OF setup)
@@ -40,6 +44,8 @@ void setup() {
   Serial.begin(115200);
 
   FileImp::Init();
+
+  SoundImp::Init();
 
   // SET LOOP TIME AT END OF setup
   oldTime = micros();
@@ -103,4 +109,6 @@ void loop() {
   }
 
   TFTImp::PushCurrentFrameSprite(dt);
+
+  SoundImp::Update();
 }

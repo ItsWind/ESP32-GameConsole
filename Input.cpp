@@ -1,16 +1,33 @@
 #include "Input.h"
 #include "Constants.h"
 
+static uint8_t lastVibrationSet = 0;
+
 namespace Input {
-  Button Buttons[7] = {
+  Button Buttons[9] = {
     {DPAD_CENTER_PIN, 0, false, "BUTTON_CENTER", false, false},
     {DPAD_UP_PIN, 0, false, "BUTTON_UP", false, false},
     {DPAD_RIGHT_PIN, 0, false, "BUTTON_RIGHT", false, false},
     {DPAD_DOWN_PIN, 0, false, "BUTTON_DOWN", false, false},
     {DPAD_LEFT_PIN, 0, false, "BUTTON_LEFT", false, false},
     {JOYSTICK_LEFT_BUTTON_PIN, 0, false, "BUTTON_JOYSTICK_LEFT", false, false},
-    {JOYSTICK_RIGHT_BUTTON_PIN, 0, false, "BUTTON_JOYSTICK_RIGHT", false, false}
+    {JOYSTICK_RIGHT_BUTTON_PIN, 0, false, "BUTTON_JOYSTICK_RIGHT", false, false},
+    {LEFT_BUMPER_BUTTON_PIN, 0, false, "BUTTON_BUMPER_LEFT", false, false},
+    {RIGHT_BUMPER_BUTTON_PIN, 0, false, "BUTTON_BUMPER_RIGHT", false, false}
   };
+
+  void SetVibration(uint8_t vibrationPwm) {
+    if (lastVibrationSet == vibrationPwm) {
+      return;
+    }
+
+    analogWrite(VIBRATION_PIN, vibrationPwm);
+    lastVibrationSet = vibrationPwm;
+  }
+
+  uint8_t GetVibration() {
+    return lastVibrationSet;
+  }
 
   void CheckButtonInputs(unsigned long dt) {
     // Iterate button pins

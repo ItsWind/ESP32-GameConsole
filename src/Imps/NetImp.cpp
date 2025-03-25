@@ -57,6 +57,20 @@ static void checkDownloadPulse(unsigned long dt) {
   }
 }
 
+static void sendBytesBackForDownload(bool fromSerial, uint8_t * bytes, size_t len) {
+  if (fromSerial) {
+    uint8_t modBytes[len+1];
+    modBytes[0] = (uint8_t)len;
+    for (size_t i = 0; i < len; i++) {
+      modBytes[i+1] = bytes[i];
+    }
+    Serial.write(modBytes, len+1);
+  }
+  else {
+    NetImp::UDP.write(bytes, len);
+  }
+}
+
 namespace NetImp {
   bool DownloadingGame = false;
 
@@ -141,12 +155,13 @@ namespace NetImp {
         FileImp::NukeDirectory(fullPath.c_str());
 
         uint8_t bytesBackClearedDir[] = {2};
-        if (fromSerial) {
+        sendBytesBackForDownload(fromSerial, bytesBackClearedDir, 1);
+        /*if (fromSerial) {
           // Send bytes through serial
         }
         else {
           NetImp::UDP.write(bytesBackClearedDir, 1);
-        }
+        }*/
         return;
       }
       // 1 = getting dir/file.extension, prefixes {1, b1, b2, b3, b4}
@@ -171,12 +186,13 @@ namespace NetImp {
         Serial.println(fileDirNameDownloading);
 
         uint8_t bytesBackFileName[] = {3};
-        if (fromSerial) {
+        sendBytesBackForDownload(fromSerial, bytesBackFileName, 1);
+        /*if (fromSerial) {
           // Send bytes through serial
         }
         else {
           NetImp::UDP.write(bytesBackFileName, 1);
-        }
+        }*/
         return;
       }
       // 2 = getting chunk of above dirFilePath, prefixes {2, chunkNumByte1, chunkNumByte2}
@@ -195,12 +211,13 @@ namespace NetImp {
         if (chunkNum < currentChunkNum) {
           Serial.println("Caught resend current chunk num error");
           uint8_t bytesBackChunk[] = {4, bytes[1], bytes[2]};
-          if (fromSerial) {
+          sendBytesBackForDownload(fromSerial, bytesBackChunk, 3);
+          /*if (fromSerial) {
             // Send bytes through serial
           }
           else {
             NetImp::UDP.write(bytesBackChunk, 3);
-          }
+          }*/
           return;
         }
         else if (chunkNum > currentChunkNum) {
@@ -223,12 +240,13 @@ namespace NetImp {
           Serial.println(fileDirNameDownloading);
 
           uint8_t bytesBackChunk[] = {4, bytes[1], bytes[2]};
-          if (fromSerial) {
+          sendBytesBackForDownload(fromSerial, bytesBackChunk, 3);
+          /*if (fromSerial) {
             // Send bytes through serial
           }
           else {
             NetImp::UDP.write(bytesBackChunk, 3);
-          }
+          }*/
         }
         return;
       }

@@ -12,8 +12,10 @@ namespace Input {
     bool justPressed;
     bool justReleased;
   };
-  extern Button Buttons[7];
+  extern Button Buttons[9];
 
-  extern void CheckButtonInputs(unsigned long dt);
-  extern float CheckJoystickAxis(uint8_t pinNumber);
+  void SetVibration(uint8_t vibrationPwm);
+  uint8_t GetVibration();
+  void CheckButtonInputs(unsigned long dt);
+  float CheckJoystickAxis(uint8_t pinNumber);
 }

@@ -1,4 +1,5 @@
 #include "src/Imps/TFTImp.h"
+#include "Constants.h"
 
 struct PaletteColor {
   uint16_t rgb565;
@@ -56,17 +57,34 @@ static void doFIMGPixel(PaletteColor palColor, int32_t drawX, int32_t drawY, boo
   }
 }
 
+static uint8_t lastScreenDimSet = 0;
+
 namespace TFTImp {
   TFT_eSPI Screen = TFT_eSPI();
   TFT_eSprite FrameSprite = TFT_eSprite(&Screen);
 
   void Init() {
     Screen.init();
-    Screen.setRotation(45);
+    Screen.setRotation(1);
     Screen.fillScreen(TFT_BLACK);
     Screen.setTextColor(TFT_WHITE);
     Screen.setTextWrap(false);
     Screen.setCursor(0, 0);
+
+    SetScreenDim(0);
+  }
+
+  void SetScreenDim(uint8_t dimPwm) {
+    if (lastScreenDimSet == dimPwm) {
+      return;
+    }
+
+    analogWrite(SCREEN_DIM_PIN, dimPwm);
+    lastScreenDimSet = dimPwm;
+  }
+
+  uint8_t GetScreenDim() {
+    return lastScreenDimSet;
   }
 
   void PrepareNewFrameSprite() {

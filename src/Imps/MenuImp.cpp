@@ -68,6 +68,10 @@ namespace MenuImp {
     else if (Input::Buttons[3].justPressed) {
       SetMenu(new GamesMenu());
     }
+    else if (Input::Buttons[0].justPressed) {
+      uint8_t currentDim = TFTImp::GetScreenDim();
+      TFTImp::SetScreenDim(currentDim == 255 ? 128 : currentDim == 128 ? 0 : currentDim == 0 ? 255 : 255);
+    }
   }
   void MainMenu::Draw() {
     int16_t halfWidth = TFTImp::Screen.width() / 2;
